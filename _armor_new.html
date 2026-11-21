@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>new armor zoom</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; }
+  .cell { text-align:center; }
+  .cap { font-size:12px; color:#c9a45c; height:15px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'full',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  const sets = [
+    ['b_sleeveless', { body:'sleeveless' }],
+    ['b_poncho', { body:'poncho' }],
+    ['b_cuirbouilli', { body:'cuirbouilli' }],
+    ['b_muscle_iron', { body:'muscleiron' }],
+    ['b_bronze_muscle', { body:'bronzemuscle' }],
+    ['b_cuirass', { body:'cuirass' }],
+    ['b_gothic', { body:'gothic' }],
+    ['b_hauberk', { body:'hauberk' }],
+    ['a_arm_wraps', { arms:'armwraps' }],
+    ['a_hide_guards', { arms:'hideguard' }],
+    ['a_splint_bracers', { arms:'splintarm' }],
+    ['a_lamellar_sleeves', { arms:'lamellararm' }],
+    ['a_fauld_arms', { arms:'fauldarm' }],
+    ['a_manica', { arms:'manica' }],
+    ['a_pauldron', { arms:'pauldron' }],
+    ['l_puttees', { legs:'puttees' }],
+    ['l_gaiters', { legs:'gaiters' }],
+    ['l_baggy', { legs:'baggy' }],
+    ['l_splint_legs', { legs:'splintlegs' }],
+    ['l_samurai', { legs:'samurai' }]
+  ];
+  sets.forEach(([label, eq]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 230; cv.height = 330;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = label;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const full = { weapon:null, offhand:null, head:null, body:null, arms:null, legs:null };
+    Object.keys(eq).forEach(k => {
+      const vis = eq[k];
+      const found = itemsBySlot(k).find(i => i.vis === vis);
+      full[k] = found ? { vis: found.vis, color: found.color, trim: found.trim, armor: found.armor } : { vis, color: '#8a7a66' };
+    });
+    ctx.save();
+    ctx.translate(115, 0);
+    ctx.scale(2.5, 2.5);
+    drawBattleBrother(ctx, makeGlad({ equip: full }), 0, 128, 0.9, 1, { emotion:'idle' });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Диагностика 2</title>
+<style>
+  body { margin: 0; background: #14100d; color: #e8dcc8; font: 13px Consolas, monospace; padding: 10px; }
+  canvas { background: #241c15; border: 1px solid #4a3a28; }
+  #log { white-space: pre-wrap; color: #ffb27a; }
+</style>
+</head>
+<body>
+<canvas id="cv" width="400" height="500"></canvas>
+<div id="log"></div>
+<script src="data.js"></script>
+<script>window.clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };</script>
+<script src="renderer.js"></script>
+<script>
+const log = [];
+function say(s) { log.push(s); document.getElementById('log').textContent = log.join('\n'); }
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+// Считаем глубину save/restore и логируем трансформацию в момент drawHead
+let depth = 0;
+const realSave = ctx.save.bind(ctx);
+const realRestore = ctx.restore.bind(ctx);
+ctx.save = function () { depth++; return realSave(); };
+ctx.restore = function () {
+  if (depth <= 0) say('!!! RESTORE при пустом стеке');
+  depth--;
+  return realRestore();
+};
+
+const realDrawHead = window.drawHead;
+window.drawHead = function (c, ...rest) {
+  const t = c.getTransform();
+  say('drawHead depth=' + depth + ' transform a=' + t.a.toFixed(2) + ' d=' + t.d.toFixed(2) +
+      ' e=' + t.e.toFixed(1) + ' f=' + t.f.toFixed(1));
+  return realDrawHead(c, ...rest);
+};
+
+const realDrawLegSegmented = window.drawLegSegmented;
+window.drawLegSegmented = function (c, ...rest) {
+  const t = c.getTransform();
+  say('drawLeg depth=' + depth + ' a=' + t.a.toFixed(2) + ' e=' + t.e.toFixed(1) + ' f=' + t.f.toFixed(1));
+  return realDrawLegSegmented(c, ...rest);
+};
+
+const g = {
+  id: 'test_glad_1', name: 'T', gender: 'male', build: 'normal',
+  skinColor: '#e8ab7e', hairColor: '#4a3018', hairStyle: 'short', beardStyle: 'full',
+  equip: {}
+};
+
+drawBattleBrother(ctx, g, 260, 460, 2.0, 1, {});
+say('итоговая глубина после вызова: ' + depth);
+</script>
+</body>
+</html>

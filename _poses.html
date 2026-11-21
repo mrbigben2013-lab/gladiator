@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Боевые позы</title>
+<style>
+  body { margin:0; background:#1a1512; color:#e8dcc8; font:12px "Segoe UI", sans-serif; padding:10px; }
+  .grid { display:flex; flex-wrap:wrap; gap:8px; }
+  figure { margin:0; background:radial-gradient(circle at 50% 30%, #4a3a2a, #1a1512); border-radius:8px; }
+  figcaption { text-align:center; padding:3px; color:#b9a687; font-size:11px; }
+  h3 { color:#e5b54f; font-size:13px; margin:10px 0 6px; }
+  #err { color:#ff8a7a; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div id="err"></div>
+<h3>Стойка / удар / блок / уклонение</h3>
+<div class="grid" id="g"></div>
+<script src="data.js?t=32"></script>
+<script>window.clamp = function (v,a,b){return Math.max(a,Math.min(b,v));};</script>
+<script src="renderer.js?t=32"></script>
+<script>
+const errBox = document.getElementById('err');
+function makeGlad(over) {
+  return Object.assign({
+    id:'pose', name:'Тест', gender:'male', build:'muscular',
+    skinColor:'#e8ab7e', hairColor:'#4a3018',
+    hairStyle:'short', beardStyle:'short', faceStyle:'square',
+    eyeStyle:'calm', noseStyle:'straight', browStyle:'natural', mouthStyle:'neutral',
+    equip:{ weapon:null, offhand:null, head:null, body:null, arms:null, legs:null },
+    limbs:null
+  }, over);
+}
+const poses = [
+  ['стойка', { }],
+  ['замах', { swing: 0.5 }],
+  ['удар', { swing: 1.0, lunge: 1 }],
+  ['блок', { block: 1 }],
+  ['уклонение', { dodge: 1 }],
+  ['бег', { walk: 1, walkPhase: 1.2 }],
+  ['победа', { victory: 1 }],
+];
+const g = document.getElementById('g');
+poses.forEach(([label, anim]) => {
+  const fig = document.createElement('figure');
+  const cv = document.createElement('canvas');
+  cv.width = 200; cv.height = 300;
+  const cap = document.createElement('figcaption');
+  cap.textContent = label;
+  fig.appendChild(cv); fig.appendChild(cap);
+  g.appendChild(fig);
+  try {
+    const ctx = cv.getContext('2d');
+    drawBattleBrother(ctx, makeGlad({}), cv.width/2, cv.height - 24, 1.35, 1,
+      Object.assign({ emotion:'idle', breath: 0 }, anim));
+  } catch (e) { errBox.textContent += label + ': ' + e.message + '\n'; }
+});
+</script>
+</body>
+</html>

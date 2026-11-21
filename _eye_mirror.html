@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Симметрия: отражение головы</title>
+<style>
+  body { margin:0; background:#14100d; color:#e8dcc8; font:12px "Segoe UI", sans-serif; padding:12px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  canvas { background:#241c15; border:1px solid #4a3a28; border-radius:8px; }
+  .cap { color:#b9a687; font-size:11px; padding:2px 0 8px; }
+  .out { font-family:Consolas, monospace; font-size:11px; white-space:pre; color:#cfe8c8; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div><div class="cap">Оригинал</div><canvas id="a" width="420" height="320"></canvas></div>
+  <div><div class="cap">Зеркальная копия (ctx.scale(-1,1))</div><canvas id="b" width="420" height="320"></canvas></div>
+  <div><div class="cap">Разница</div><canvas id="c" width="420" height="320"></canvas></div>
+  <div><div class="cap">Отчёт</div><div class="out" id="rep">…</div></div>
+</div>
+<script src="data.js?t=99"></script>
+<script>window.clamp = function (v,a,b){return Math.max(a,Math.min(b,v));};</script>
+<script src="renderer.js?t=99"></script>
+<script>
+const base = {
+  id:'eye_test', name:'Тест', gender:'male', build:'normal',
+  skinColor:'#e8ab7e', hairColor:'#4a3018',
+  hairStyle:'short', beardStyle:'none', faceStyle:'classic',
+  eyeStyle:'calm', noseStyle:'straight', browStyle:'natural', mouthStyle:'neutral',
+  equip:{}
+};
+
+function draw(cv, mirrored) {
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.save();
+  ctx.translate(cv.width/2, cv.height*0.56);
+  if (mirrored) ctx.scale(-1, 1);
+  ctx.scale(5.0, 5.0);
+  drawHead(ctx, base, 0, 26.5, base.skinColor, '#c98d63', false, {},
+    { hp:100, max:100, lost:false, ratio:1 });
+  ctx.restore();
+  return ctx;
+}
+
+const ca = document.getElementById('a'), cb = document.getElementById('b'), cc = document.getElementById('c');
+const xa = draw(ca, false);
+const xb = draw(cb, true);
+
+// Зеркалим b обратно и сравниваем
+const W = ca.width, H = ca.height;
+const da = xa.getImageData(0,0,W,H).data;
+const dbRaw = xb.getImageData(0,0,W,H).data;
+const out = cc.getContext('2d').createImageData(W, H);
+let maxD = 0, sumD = 0, cnt = 0, maxAt = null;
+const y0 = Math.floor(H*0.36), y1 = Math.floor(H*0.68);
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) {
+    const sx = W - 1 - x;
+    const i = (y*W + x) * 4, j = (y*W + sx) * 4;
+    const d = (Math.abs(da[i]-dbRaw[j]) + Math.abs(da[i+1]-dbRaw[j+1]) + Math.abs(da[i+2]-dbRaw[j+2])) / 3;
+    out.data[i] = Math.min(255, d*3);
+    out.data[i+1] = d > 25 ? 60 : 0;
+    out.data[i+2] = d > 25 ? 60 : 0;
+    out.data[i+3] = 255;
+    if (y >= y0 && y < y1) {
+      if (d > maxD) { maxD = d; maxAt = {x, y}; }
+      sumD += d; cnt++;
+    }
+  }
+}
+cc.getContext('2d').putImageData(out, 0, 0);
+document.getElementById('rep').textContent =
+  `область глаз\nмакс: ${maxD.toFixed(1)} в (${maxAt?maxAt.x:'-'}, ${maxAt?maxAt.y:'-'})\nсредняя: ${(sumD/cnt).toFixed(2)}`;
+</script>
+</body>
+</html>

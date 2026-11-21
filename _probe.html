@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>syntax probe</title></head>
+<body>
+<pre id="out">waiting...</pre>
+<script>
+  window.addEventListener('error', function (e) {
+    var el = document.getElementById('out');
+    el.textContent += '\nERROR: ' + e.message + '\nfile: ' + (e.filename || '') +
+      '\nline: ' + e.lineno + ' col: ' + e.colno;
+  }, true);
+</script>
+<script src="renderer.js"></script>
+<script>
+  document.getElementById('out').textContent += '\nrenderer.js loaded';
+</script>
+</body></html>

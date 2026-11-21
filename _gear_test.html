@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>enemy gear test</title>
+<style>
+  body { background:#1b1512; color:#d8cbb4; font-family:Consolas, monospace; margin:0; padding:12px; font-size:12px; }
+  h3 { color:#c9a45c; margin:14px 0 6px; font-size:13px; }
+  .row { padding:2px 0; }
+  .ranged { color:#8fc0e0; }
+  .err { color:#e06a5a; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script src="data.js"></script>
+<script src="combat.js"></script>
+<script>
+  const out = document.getElementById('out');
+  const lines = [];
+  const log = s => lines.push(s);
+
+  ['low','mid','brutal'].forEach(tierId => {
+    log('<h3>' + tierId.toUpperCase() + '</h3>');
+    for (let i = 0; i < 6; i++) {
+      const m = buildMatch(null, tierId, null);
+      m.units.forEach(u => {
+        const eq = ['wId','oId','hId','bId','aId','lId'].map(k => u[k] ? itemById(u[k]) : null);
+        const names = eq.map((it, idx) => it ? it.name : '—');
+        const tiers = eq.map(it => it ? it.tier : '-');
+        log('<div class="row' + (u.role === 'ranged' ? ' ranged' : '') + '">'
+          + m.name + ' / ' + u.name + ' [' + u.role + '] :: '
+          + names.join(' | ') + '  <b>тиры: ' + tiers.join(',') + '</b></div>');
+      });
+    }
+  });
+
+  // Проверка, что роли не сломаны
+  let bad = 0;
+  for (let i = 0; i < 300; i++) {
+    const m = buildMatch(null, 'brutal', null);
+    m.units.forEach(u => {
+      const w = u.wId ? itemById(u.wId) : null;
+      if (u.role === 'ranged' && w && w.cat !== 'ranged' && w.cat !== 'crossbow' && w.cat !== 'bow') bad++;
+      if (w && w.twoHanded) bad++;
+      if (u.role === 'shield' && u.oId) {
+        const o = itemById(u.oId);
+        if (!o || o.slot !== 'offhand') bad++;
+      }
+    });
+  }
+  log('<h3 class="' + (bad ? 'err' : '') + '">Нарушений ролей за 300 матчей: ' + bad + '</h3>');
+
+  out.innerHTML = lines.join('');
+</script>
+</body>
+</html>

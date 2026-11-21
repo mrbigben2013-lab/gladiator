@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Черты лица</title>
+<style>
+  body { margin: 0; background: #14100d; color: #e8dcc8; font: 12px "Segoe UI", sans-serif; padding: 12px; }
+  h3 { color:#c9a45c; margin: 14px 0 6px; font-size: 13px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  figure { margin: 0; }
+  canvas { background: radial-gradient(circle at 50% 42%, #3a2e24, #14100d); border: 1px solid #4a3a28; border-radius: 8px; }
+  figcaption { text-align: center; padding: 4px; color: #b9a687; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script src="data.js?t=7"></script>
+<script>window.clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };</script>
+<script src="renderer.js?t=7"></script>
+<script>
+const out = document.getElementById('out');
+const base = {
+  id: 'f_test', name: 'Тест', gender: 'male', build: 'normal',
+  skinColor: '#e8ab7e', hairColor: '#4a3018',
+  hairStyle: 'short', beardStyle: 'none',
+  faceStyle: 'classic', equip: {}
+};
+function block(title, list, key) {
+  const h = document.createElement('h3');
+  h.textContent = title;
+  out.appendChild(h);
+  const row = document.createElement('div');
+  row.className = 'row';
+  out.appendChild(row);
+  list.forEach(s => {
+    const fig = document.createElement('figure');
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 165;
+    const cap = document.createElement('figcaption');
+    cap.textContent = s.name;
+    fig.appendChild(cv); fig.appendChild(cap);
+    row.appendChild(fig);
+    const ctx = cv.getContext('2d');
+    const g = Object.assign({}, base);
+    g[key] = s.id;
+    try {
+      ctx.save();
+      ctx.translate(cv.width / 2, cv.height * 0.54);
+      ctx.scale(2.9, 2.9);
+      drawHead(ctx, g, 0, 26.5, '#e8ab7e', '#c98d63', false, {}, { hp: 100, max: 100, lost: false, ratio: 1 });
+      ctx.restore();
+    } catch (e) {
+      cap.textContent = s.name + ' ОШИБКА: ' + e.message;
+      cap.style.color = '#ff6b5a';
+    }
+  });
+}
+block('Форма лица', FACE_STYLES, 'faceStyle');
+block('Глаза', EYE_SETS, 'eyeStyle');
+block('Нос', NOSE_SETS, 'noseStyle');
+block('Брови', BROW_SETS, 'browStyle');
+block('Рот', MOUTH_SETS, 'mouthStyle');
+</script>
+</body>
+</html>

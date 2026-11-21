@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Кулак крупно</title>
+<style>
+  body { margin: 0; background: #14100d; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+  canvas { background: radial-gradient(circle at 50% 42%, #3a2e24, #14100d); border: 1px solid #4a3a28; border-radius: 8px; }
+  figcaption { color: #b9a687; font: 12px "Segoe UI"; text-align: center; }
+  figure { margin: 0; }
+</style>
+</head>
+<body>
+<figure><canvas id="a" width="300" height="300"></canvas><figcaption>гладиус: кулак + рукоять</figcaption></figure>
+<figure><canvas id="b" width="300" height="300"></canvas><figcaption>топор</figcaption></figure>
+<figure><canvas id="c" width="300" height="300"></canvas><figcaption>пустая кисть</figcaption></figure>
+
+<script src="data.js"></script>
+<script>window.clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };</script>
+<script src="renderer.js"></script>
+<script>
+function hero(wpnId) {
+  const g = {
+    id: 'x1', gender: 'male', build: 'normal', skinColor: '#e8ab7e',
+    hairColor: '#4a3018', hairStyle: 'short', beardStyle: 'none',
+    faceStyle: 'classic', eyeStyle: 'calm', noseStyle: 'straight', browStyle: 'natural',
+    equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null }
+  };
+  if (wpnId) { const w = itemById(wpnId); if (w) g.equip.weapon = w; }
+  return g;
+}
+
+// Рисуем всю фигуру, но камеру наводим на кисть: сдвигаем и масштабируем
+function zoomOnHand(canvas, g) {
+  const ctx = canvas.getContext('2d');
+  const S = 7.5;
+  // Кисть в системе тела: плечо (shoulder*0.8, hipY-44) + (16.4, 49)
+  // при scale=1 и стандартных пропорциях это примерно (17+16, -122+49)
+  ctx.save();
+  ctx.translate(canvas.width * 0.5 - 33 * S, canvas.height * 0.5 + 73 * S);
+  ctx.scale(S, S);
+  drawBattleBrother(ctx, g, 0, 0, 1, 1, {});
+  ctx.restore();
+}
+
+zoomOnHand(document.getElementById('a'), hero('w_rusty'));
+zoomOnHand(document.getElementById('b'), hero('w_hatchet'));
+zoomOnHand(document.getElementById('c'), hero(null));
+</script>
+</body>
+</html>

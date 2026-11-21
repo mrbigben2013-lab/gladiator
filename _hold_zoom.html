@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>hold zoom</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; }
+  .cell { text-align:center; }
+  .cap { font-size:11px; color:#c9a45c; height:14px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js?t=21"></script>
+<script>window.clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };</script>
+<script src="renderer.js?t=21"></script>
+<script>
+  function makeGlad(item, over) {
+    return Object.assign({
+      id: 'zoom_' + (item ? item.id : 'none'),
+      name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'stubble', faceStyle: 'classic',
+      equip: { weapon: item, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over || {});
+  }
+  const ids = ['w_hatchet', 'w_handaxe', 'w_broadaxe', 'w_greatbeard', 'w_bardiche',
+    'w_blacksmith', 'w_warhammer', 'w_maul', 'w_godhammer', 'w_dual_axes'];
+  ids.forEach(id => {
+    const item = itemById(id);
+    if (!item) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 300; cv.height = 420;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = item.name;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const g = makeGlad(item);
+    ctx.save();
+    ctx.translate(150, 20);
+    ctx.scale(2.6, 2.6);
+    drawBattleBrother(ctx, g, 0, 120, 0.55, 1, { walk: 0, breath: 0.4, emotion: 'idle' });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

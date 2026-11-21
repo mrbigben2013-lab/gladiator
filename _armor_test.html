@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>armor test</title>
+<style>
+  body { background:#1b1512; margin:0; padding:10px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cell { text-align:center; }
+  .cap { font-size:11px; color:#c9a45c; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'full',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  const bodies = ['tunic','leather','brigandine','gambeson','mail','scale','lamellar','plate','lorica','bronze'];
+  bodies.forEach(b => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 210; cv.height = 290;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = b;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    ctx.save();
+    ctx.translate(105, 0);
+    ctx.scale(1.5, 1.5);
+    drawBattleBrother(ctx, makeGlad({ equip: { weapon:null, offhand:null, head:null, body:{ vis:b, color:'#7a6a52' }, arms:null, legs:null } }), 0, 195, 0.9, 1, { emotion:'idle' });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

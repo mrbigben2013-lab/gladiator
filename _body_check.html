@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Проверка тела</title>
+<style>
+  body { margin: 0; background: #14100d; color: #e8dcc8; font: 12px "Segoe UI", sans-serif; display: flex; gap: 10px; flex-wrap: wrap; padding: 10px; }
+  figure { margin: 0; }
+  canvas { background: radial-gradient(circle at 50% 42%, #3a2e24, #14100d); border: 1px solid #4a3a28; border-radius: 8px; }
+  figcaption { text-align: center; padding: 4px; color: #b9a687; }
+</style>
+</head>
+<body>
+<figure><canvas id="c1" width="300" height="420"></canvas><figcaption>scale 2.2</figcaption></figure>
+<figure><canvas id="c2" width="300" height="420"></canvas><figcaption>scale 2.2 без брони</figcaption></figure>
+<figure><canvas id="c3" width="300" height="420"></canvas><figcaption>scale 2.2 щит</figcaption></figure>
+<figure><canvas id="c4" width="300" height="420"></canvas><figcaption>scale 2.2 копьё</figcaption></figure>
+
+<script src="data.js"></script>
+<script>window.clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };</script>
+<script src="renderer.js"></script>
+<script>
+function mkHero(over) {
+  const g = {
+    id: 'test_glad_1',
+    name: 'Тест',
+    gender: 'male',
+    build: 'normal',
+    skinColor: '#e8ab7e',
+    hairColor: '#4a3018',
+    hairStyle: 'short',
+    beardStyle: 'full',
+    equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null }
+  };
+  Object.assign(g, over || {});
+  if (typeof resetLimbs === 'function') resetLimbs(g);
+  return g;
+}
+
+function findItem(id) {
+  try { return itemById(id); } catch (e) { return null; }
+}
+
+function paint(canvas, hero, label) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  try {
+    drawBattleBrother(ctx, hero, canvas.width / 2, canvas.height - 40, 2.2, 1, {});
+  } catch (e) {
+    const cap = canvas.parentNode.querySelector('figcaption');
+    cap.textContent = (label || '') + ' ОШИБКА: ' + e.message;
+    cap.style.color = '#ff6b5a';
+  }
+}
+
+const h1 = mkHero();
+const body = findItem('b_tunic');
+const legs = findItem('l_sandals');
+const wpn = findItem('w_rusty');
+if (body) h1.equip.body = body;
+if (legs) h1.equip.legs = legs;
+if (wpn) h1.equip.weapon = wpn;
+paint(document.getElementById('c1'), h1);
+
+paint(document.getElementById('c2'), mkHero());
+
+const h3 = mkHero();
+if (wpn) h3.equip.weapon = wpn;
+const shield = findItem('o_buckler');
+if (shield) h3.equip.offhand = shield;
+paint(document.getElementById('c3'), h3);
+
+const h4 = mkHero();
+const spear = findItem('w_spear');
+if (spear) h4.equip.weapon = spear;
+paint(document.getElementById('c4'), h4);
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>spear zoom</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cell { text-align:center; }
+  .cap { font-size:12px; color:#c9a45c; height:15px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'none',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  const cases = [
+    ['idle', 'w_spear', 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }],
+    ['thrust 0.5', 'w_spear', 1, { walk: 0, walkPhase: 0, swing: 0.5, breath: 1.2, emotion: 'angry' }],
+    ['thrust 1', 'w_spear', 1, { walk: 0, walkPhase: 0, swing: 1, breath: 1.2, emotion: 'angry' }],
+    ['pike idle', 'w_pike', 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }],
+    ['facing -1', 'w_spear', -1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }]
+  ];
+  const row = document.getElementById('row');
+  cases.forEach(([label, wid, facing, anim]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 560; cv.height = 430;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = label;
+    wrap.appendChild(cap);
+    row.appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const g = makeGlad({
+      id: 'g_' + label,
+      equip: { weapon: itemById(wid), offhand: null, head: null, body: null, arms: null, legs: null }
+    });
+    for (let k = 0; k < 80; k++) {
+      ctx.clearRect(0, 0, 560, 430);
+      drawBattleBrother(ctx, g, 140, 350, 2.6, facing, anim);
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>weapon icons</title>
+<style>
+  body { background:#1d1712; margin:0; padding:10px; font-family:Segoe UI, sans-serif; }
+  .grid { display:flex; flex-wrap:wrap; gap:6px; }
+  .cell { width:76px; text-align:center; }
+  .cell canvas { background:#2a211a; border:1px solid #4a3a26; border-radius:6px; display:block; }
+  .cap { font-size:9px; color:#c9a45c; line-height:1.15; margin-top:2px; height:22px; overflow:hidden; }
+</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const items = ITEMS_DB.filter(i => i.slot === 'weapon');
+  const grid = document.getElementById('grid');
+  items.forEach(item => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 76; cv.height = 76;
+    cell.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = item.name;
+    cell.appendChild(cap);
+    grid.appendChild(cell);
+    const ctx = cv.getContext('2d');
+    drawItemIcon(ctx, item, 38, 38, 68);
+    // перекрестие центра ячейки — для проверки центровки
+    ctx.strokeStyle = 'rgba(120,200,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 38); ctx.lineTo(76, 38);
+    ctx.moveTo(38, 0); ctx.lineTo(38, 76);
+    ctx.stroke();
+  });
+  document.title = 'icons: ' + items.length;
+</script>
+</body>
+</html>

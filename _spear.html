@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>spear close</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cell { text-align:center; }
+  .cap { font-size:12px; color:#c9a45c; height:15px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'full',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  const cases = [
+    ['spear idle', 'w_spear', 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }],
+    ['spear thrust 0.5', 'w_spear', 1, { walk: 0, walkPhase: 0, swing: 0.5, breath: 1.2, emotion: 'angry' }],
+    ['spear thrust 1', 'w_spear', 1, { walk: 0, walkPhase: 0, swing: 1, breath: 1.2, emotion: 'angry' }],
+    ['spear walk', 'w_spear', 1, { walk: 0.8, walkPhase: 2, breath: 1.2, emotion: 'idle' }],
+    ['trident idle', 'w_trident', 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }],
+    ['halberd idle', 'w_halberd', 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }],
+    ['pike idle', 'w_pike', 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }],
+    ['spear facing -1', 'w_spear', -1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' }]
+  ];
+  const row = document.getElementById('row');
+  cases.forEach(([label, wid, facing, anim]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 420; cv.height = 420;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = label;
+    wrap.appendChild(cap);
+    row.appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const g = makeGlad({
+      id: 'g_' + label,
+      equip: { weapon: itemById(wid), offhand: null, head: null, body: null, arms: null, legs: null }
+    });
+    for (let k = 0; k < 60; k++) {
+      ctx.clearRect(0, 0, 420, 420);
+      drawBattleBrother(ctx, g, 210, 330, 1.5, facing, anim);
+    }
+  });
+</script>
+</body>
+</html>

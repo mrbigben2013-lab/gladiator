@@ -1,0 +1,214 @@
+function drawCityScene(c, W, H) {
+  const rand = seeded(777);
+  const horizon = H * 0.46;
+
+  // ---------- Небо: тёплый закат ----------
+  const sky = c.createLinearGradient(0, 0, 0, horizon);
+  sky.addColorStop(0, '#2a2038');
+  sky.addColorStop(0.34, '#7a423d');
+  sky.addColorStop(0.66, '#c8763f');
+  sky.addColorStop(1, '#f0cf96');
+  c.fillStyle = sky;
+  c.fillRect(0, 0, W, horizon + 2);
+
+  const sunX = W * 0.70, sunY = horizon - H * 0.045;
+  const sunG = c.createRadialGradient(sunX, sunY, 2, sunX, sunY, H * 0.30);
+  sunG.addColorStop(0, 'rgba(255,244,208,0.82)');
+  sunG.addColorStop(0.20, 'rgba(255,202,134,0.30)');
+  sunG.addColorStop(1, 'rgba(255,170,90,0)');
+  c.fillStyle = sunG;
+  c.beginPath(); c.arc(sunX, sunY, H * 0.30, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff5d6';
+  c.beginPath(); c.arc(sunX, sunY, H * 0.036, 0, Math.PI * 2); c.fill();
+
+  // ---------- Дальние холмы ----------
+  const hg = c.createLinearGradient(0, horizon - H * 0.14, 0, horizon);
+  hg.addColorStop(0, 'rgba(96,78,80,0.55)');
+  hg.addColorStop(1, 'rgba(104,80,68,0.40)');
+  c.fillStyle = hg;
+  c.beginPath();
+  c.moveTo(0, horizon);
+  for (let x = 0; x <= W; x += W / 12) c.lineTo(x, horizon - H * (0.030 + rand() * 0.055));
+  c.lineTo(W, horizon);
+  c.closePath();
+  c.fill();
+
+  // ---------- Дальние постройки: храмы и виллы на холмах ----------
+  for (let i = 0; i < 8; i++) {
+    const bx = W * (0.03 + rand() * 0.94);
+    const bw = W * (0.022 + rand() * 0.026);
+    const bh = H * (0.035 + rand() * 0.045);
+    const by = horizon - H * (0.01 + rand() * 0.045);
+    c.fillStyle = `rgba(${132 + rand() * 26 | 0},${112 + rand() * 20 | 0},${86 + rand() * 16 | 0},0.72)`;
+    c.fillRect(bx, by - bh, bw, bh);
+    // фронтон
+    c.beginPath();
+    c.moveTo(bx - bw * 0.08, by - bh);
+    c.lineTo(bx + bw / 2, by - bh - bh * 0.45);
+    c.lineTo(bx + bw * 1.08, by - bh);
+    c.closePath();
+    c.fill();
+  }
+
+  // ---------- Земля: луга и поля ----------
+  const ground = c.createLinearGradient(0, horizon, 0, H);
+  ground.addColorStop(0, '#9aa465');
+  ground.addColorStop(0.22, '#a8a86a');
+  ground.addColorStop(0.55, '#b6a87a');
+  ground.addColorStop(1, '#8b7a58');
+  c.fillStyle = ground;
+  c.fillRect(0, horizon, W, H - horizon);
+
+  // Дальняя линия деревьев у горизонта
+  for (let i = 0; i < 16; i++) {
+    const tx = W * (i / 15) + rand() * W * 0.03;
+    const th = H * (0.018 + rand() * 0.022);
+    c.fillStyle = `rgba(${58 + rand() * 22 | 0},${74 + rand() * 20 | 0},${46 + rand() * 16 | 0},0.85)`;
+    c.beginPath();
+    c.ellipse(tx, horizon - th * 0.4, th * 1.5, th, 0, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  // ---------- Амфитеатр на холме слева ----------
+  drawCityArena(c, W * 0.145, horizon + H * 0.085, H * 0.30);
+
+  // ---------- Античная деревня на среднем плане ----------
+  // Дома-инсулы, крытые черепицей, сгруппированы у дороги.
+  const village = [
+    { x: 0.335, y: 0.560, w: 0.062, h: 0.075 },
+    { x: 0.415, y: 0.545, w: 0.052, h: 0.062 },
+    { x: 0.500, y: 0.570, w: 0.070, h: 0.085 },
+    { x: 0.590, y: 0.548, w: 0.056, h: 0.066 },
+    { x: 0.672, y: 0.572, w: 0.064, h: 0.078 },
+    { x: 0.760, y: 0.552, w: 0.050, h: 0.060 },
+    { x: 0.840, y: 0.575, w: 0.058, h: 0.070 }
+  ];
+  village.forEach(v => {
+    drawVillageHouse(c, W * v.x, H * v.y, W * v.w, H * v.h, rand);
+  });
+
+  // ---------- Дорога, уходящая вдаль ----------
+  c.beginPath();
+  c.moveTo(W * 0.42, horizon);
+  c.lineTo(W * 0.58, horizon);
+  c.lineTo(W * 0.86, H);
+  c.lineTo(W * 0.10, H);
+  c.closePath();
+  c.fillStyle = 'rgba(206,186,150,0.60)';
+  c.fill();
+
+  // ---------- Средний план: деревья и кусты ----------
+  drawCypress(c, W * 0.255, horizon + H * 0.115, H * 0.20, 0.9);
+  drawCypress(c, W * 0.292, horizon + H * 0.100, H * 0.17, 0.8);
+  drawCypress(c, W * 0.905, horizon + H * 0.120, H * 0.21, 0.9);
+  drawCypress(c, W * 0.945, horizon + H * 0.135, H * 0.18, 0.82);
+
+  for (let i = 0; i < 14; i++) {
+    const sx = W * (0.02 + rand() * 0.96);
+    const sy = horizon + H * (0.03 + rand() * 0.30);
+    drawShrub(c, sx, sy, H * (0.022 + rand() * 0.028), rand, 0.85);
+  }
+
+  // пинии на переднем плане по краям
+  drawPine(c, W * 0.055, horizon + H * 0.36, H * 0.34, 0.95);
+  drawPine(c, W * 0.955, horizon + H * 0.33, H * 0.30, 0.9);
+
+  // ---------- Передний план: трава и цветы ----------
+  for (let i = 0; i < 90; i++) {
+    const gx = rand() * W;
+    const gy = H * (0.78 + rand() * 0.22);
+    const gh = H * (0.008 + rand() * 0.016);
+    c.strokeStyle = `rgba(${72 + rand() * 40 | 0},${96 + rand() * 40 | 0},${52 + rand() * 26 | 0},0.55)`;
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(gx, gy);
+    c.lineTo(gx + (rand() - 0.5) * gh * 0.9, gy - gh);
+    c.stroke();
+  }
+
+  // ---------- Дымка у горизонта ----------
+  const haze = c.createLinearGradient(0, horizon - H * 0.12, 0, horizon + H * 0.14);
+  haze.addColorStop(0, 'rgba(255,206,158,0)');
+  haze.addColorStop(0.55, 'rgba(255,202,152,0.20)');
+  haze.addColorStop(1, 'rgba(255,196,144,0)');
+  c.fillStyle = haze;
+  c.fillRect(0, horizon - H * 0.12, W, H * 0.26);
+}
+
+// Античный дом деревни: каменный низ, черепичная крыша, дверь и окна.
+// Рисуется «сбоку с небольшим поворотом» — без привязки к сетке города.
+function drawVillageHouse(c, x, y, w, h, rand) {
+  const bodyH = h * 0.72;
+  const wallCol = `rgb(${186 + rand() * 24 | 0},${168 + rand() * 22 | 0},${138 + rand() * 20 | 0})`;
+  const wallShade = `rgb(${158 + rand() * 20 | 0},${140 + rand() * 18 | 0},${112 + rand() * 16 | 0})`;
+
+  // тень
+  c.fillStyle = 'rgba(40,28,18,0.20)';
+  c.beginPath();
+  c.ellipse(x + w * 0.10, y + h * 0.03, w * 0.62, h * 0.10, 0, 0, Math.PI * 2);
+  c.fill();
+
+  // стена
+  c.fillStyle = wallCol;
+  c.fillRect(x - w / 2, y - bodyH, w, bodyH);
+  // теневая правая часть
+  c.fillStyle = wallShade;
+  c.fillRect(x + w * 0.16, y - bodyH, w * 0.34, bodyH);
+
+  // каменная кладка
+  c.strokeStyle = 'rgba(120,100,76,0.18)';
+  c.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const ly = y - bodyH * (i / 4);
+    c.beginPath(); c.moveTo(x - w / 2, ly); c.lineTo(x + w / 2, ly); c.stroke();
+  }
+
+  // крыша двускатная
+  const roofH = h * 0.30;
+  c.fillStyle = `rgb(${168 + rand() * 24 | 0},${88 + rand() * 20 | 0},${60 + rand() * 16 | 0})`;
+  c.beginPath();
+  c.moveTo(x - w * 0.60, y - bodyH);
+  c.lineTo(x, y - bodyH - roofH);
+  c.lineTo(x + w * 0.60, y - bodyH);
+  c.closePath();
+  c.fill();
+  // черепица
+  c.strokeStyle = 'rgba(90,40,26,0.26)';
+  for (let i = 1; i < 4; i++) {
+    const t = i / 4;
+    c.beginPath();
+    c.moveTo(x - w * 0.60 + w * 0.60 * t, y - bodyH - roofH * t);
+    c.lineTo(x + w * 0.60 - w * 0.60 * t, y - bodyH - roofH * t);
+    c.stroke();
+  }
+
+  // дверь
+  c.fillStyle = 'rgba(52,36,22,0.88)';
+  const dw = w * 0.20, dh = bodyH * 0.46;
+  c.fillRect(x - dw / 2, y - dh, dw, dh);
+
+  // окна
+  c.fillStyle = 'rgba(255,196,104,0.72)';
+  c.fillRect(x - w * 0.40, y - bodyH * 0.72, w * 0.16, bodyH * 0.18);
+  c.fillRect(x + w * 0.24, y - bodyH * 0.68, w * 0.15, bodyH * 0.16);
+  c.strokeStyle = 'rgba(60,42,26,0.55)';
+  c.lineWidth = 1;
+  c.strokeRect(x - w * 0.40, y - bodyH * 0.72, w * 0.16, bodyH * 0.18);
+  c.strokeRect(x + w * 0.24, y - bodyH * 0.68, w * 0.15, bodyH * 0.16);
+}
+
+// ==================== ПЕРЕДНИЙ ПЛАН ====================
+// Поверх бойцов: виньетка и затемнение по краям.
+function drawCityFront(c, W, H) {
+  const vg = c.createRadialGradient(W / 2, H * 0.50, Math.min(W, H) * 0.34, W / 2, H * 0.50, Math.max(W, H) * 0.82);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(10,6,4,0.58)');
+  c.fillStyle = vg;
+  c.fillRect(0, 0, W, H);
+
+  const g = c.createLinearGradient(0, H * 0.90, 0, H);
+  g.addColorStop(0, 'rgba(16,11,7,0)');
+  g.addColorStop(1, 'rgba(16,11,7,0.62)');
+  c.fillStyle = g;
+  c.fillRect(0, H * 0.90, W, H * 0.10);
+}

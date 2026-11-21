@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Братья Арены — Симулятор Гладиаторов</title>
+  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="barracks.css?v=42">
+</head>
+<body>
+
+<header id="topbar">
+  <button class="home-btn" onclick="goTo('city')" title="В город">🏛️</button>
+  <div class="brand">⚔️ БРАТЬЯ АРЕНЫ</div>
+  <div class="res">
+    <span class="res-item">💰 <b id="ui-gold">420</b></span>
+    <button class="res-item res-btn" id="btn-record" onclick="openRecord()" title="Побед и поражений" data-tip="📊 <b>Побед и поражений</b><br><small>Текущий счёт побед и поражений</small>">
+      ⚔️ <b id="ui-record">0–0</b>
+    </button>
+    <span class="res-item fame" title="Слава — ею платят за снаряжение">🏆 <b id="ui-fame">0</b></span>
+    <span class="res-item">📅 <b id="ui-day">1</b></span>
+    <button class="snd-btn" id="btn-help" onclick="openHelp('guide')" title="Справка и классы" data-tip="📖 <b>Справка и классы</b><br><small>Описание всех классов, навыков и механик игры</small>">?</button>
+    <button class="snd-btn" id="btn-slot" onclick="openSlotMenu()" title="Сохранения" data-tip="💾 <b>Сохранения</b><br><small>Выбрать и загрузить один из 5 слотов сохранения</small>">💾</button>
+    <button class="snd-btn" id="btn-sfx" onclick="toggleSfx()" title="Звуки" data-tip="🔊 <b>Звуки</b><br><small>Включить / выключить звуковые эффекты</small>">🔊</button>
+    <button class="snd-btn" id="btn-music" onclick="toggleMusic()" title="Музыка" data-tip="🎵 <b>Музыка</b><br><small>Включить / выключить фоновую музыку</small>">🎵</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= ВЫБОР СЛОТА ================= -->
+  <section id="screen-slots" class="screen active">
+    <div class="slots-wrap">
+      <div class="slots-head">
+        <h1>⚔️ БРАТЬЯ АРЕНЫ</h1>
+        <p>Выберите сохранение или начните новый путь на песке</p>
+      </div>
+      <div id="slot-grid" class="slot-grid"></div>
+      <div class="slots-cheat">
+        <input type="text" id="cheat-input" placeholder="чит-код" autocomplete="off"
+               onkeydown="if(event.key==='Enter'){applyCheatCode();}">
+        <button class="mini-btn" onclick="applyCheatCode()" data-tip="🎮 <b>Чит-код</b><br><small>Введите секретный код для бонусов</small>">Ввести</button>
+      </div>
+      <div class="slots-foot">
+        <span class="slots-note">Прогресс пишется автоматически в выбранный слот</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ГОРОД ================= -->
+  <section id="screen-city" class="screen">
+    <div class="city-wrap">
+      <canvas id="cityCanvas" class="city-canvas"></canvas>
+      <div class="city-shade"></div>
+
+      <div class="city-content">
+        <div class="city-title">
+          <h1>Рим на закате</h1>
+          <p>Выберите здание — каждый уголок города приближает вас к славе Колизея</p>
+        </div>
+
+        <div class="city-buildings" id="city-buildings"></div>
+
+        <!-- Сюжетные цели: что делать дальше и что за это дадут -->
+        <aside class="city-goals" id="city-goals"></aside>
+
+        <div class="city-squad-panel">
+          <div class="csp-head">
+            <span>Ваш отряд</span>
+            <button class="mini-btn" onclick="renderEventHistory('city-events')" data-tip="📜 <b>Вести города</b><br><small>История событий: что произошло за каждый день</small>">📜 вести</button>
+          </div>
+          <div id="city-squad" class="csp-body"></div>
+          <div id="city-events" class="city-events"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= КАЗАРМА ================= -->
+  <section id="screen-barracks" class="screen">
+    <div class="barracks-wrap">
+      <!-- Левая колонка: характеристики -->
+      <div class="br-left">
+        <div class="br-switch">
+          <button class="br-arrow" onclick="cycleGlad(-1)" data-tip="← Предыдущий боец в казарме">‹</button>
+          <div class="br-who" id="br-who">—</div>
+          <button class="br-arrow" onclick="cycleGlad(1)" data-tip="Следующий боец в казарме">›</button>
+        </div>
+        <!-- Полоса аватарок: визуальное представление всех компаньонов.
+             Клик по карточке выбирает бойца; в углу — номер и значок отряда. -->
+        <div id="br-avatars" class="br-avatars"></div>
+        <div id="glad-card" class="br-card"></div>
+      </div>
+
+      <!-- Центр: персонаж с ячейками экипировки -->
+      <div class="br-center">
+        <div class="doll">
+          <div class="doll-slot slot-head" data-slot="head" ondrop="dropOnSlot(event,'head')" ondragover="allowDrop(event)" ondragleave="leaveSlot(event)">
+            <span class="ds-label">Голова</span>
+            <span class="ds-item" id="slot-head">—</span>
+          </div>
+          <div class="doll-slot slot-weapon" data-slot="weapon" ondrop="dropOnSlot(event,'weapon')" ondragover="allowDrop(event)" ondragleave="leaveSlot(event)">
+            <span class="ds-label">Правая рука</span>
+            <span class="ds-item" id="slot-weapon">—</span>
+          </div>
+          <div class="doll-slot slot-offhand" data-slot="offhand" ondrop="dropOnSlot(event,'offhand')" ondragover="allowDrop(event)" ondragleave="leaveSlot(event)">
+            <span class="ds-label">Левая рука</span>
+            <span class="ds-item" id="slot-offhand">—</span>
+          </div>
+          <div class="doll-canvas"><canvas id="bustCanvas" width="340" height="420"></canvas></div>
+          <div class="doll-slot slot-body" data-slot="body" ondrop="dropOnSlot(event,'body')" ondragover="allowDrop(event)" ondragleave="leaveSlot(event)">
+            <span class="ds-label">Туловище</span>
+            <span class="ds-item" id="slot-body">—</span>
+          </div>
+          <div class="doll-slot slot-arms" data-slot="arms" ondrop="dropOnSlot(event,'arms')" ondragover="allowDrop(event)" ondragleave="leaveSlot(event)">
+            <span class="ds-label">Руки</span>
+            <span class="ds-item" id="slot-arms">—</span>
+          </div>
+          <div class="doll-slot slot-legs" data-slot="legs" ondrop="dropOnSlot(event,'legs')" ondragover="allowDrop(event)" ondragleave="leaveSlot(event)">
+            <span class="ds-label">Ноги</span>
+            <span class="ds-item" id="slot-legs">—</span>
+          </div>
+        </div>
+        <div id="equip-summary" class="equip-summary"></div>
+        <div class="doll-hint">Клик по ячейке — выбрать снаряжение из склада. Перетащите предмет в ячейку — или нажмите на него.</div>
+        <!-- Селектор снаряжения: всплывает при клике на любую ячейку манекена -->
+        <div id="slot-picker" class="slot-picker" style="display:none"></div>
+      </div>
+
+      <!-- Правая колонка: склад -->
+      <div class="br-right">
+        <div class="br-filters">
+          <div class="br-filter-row" id="inv-filters">
+            <button class="chip on" data-f="all" onclick="filterInv('all')">всё</button>
+            <button class="chip" data-f="weapon" onclick="filterInv('weapon')">🗡️</button>
+            <button class="chip" data-f="offhand" onclick="filterInv('offhand')">🛡️</button>
+            <button class="chip" data-f="head" onclick="filterInv('head')">🪖</button>
+            <button class="chip" data-f="body" onclick="filterInv('body')">🦺</button>
+            <button class="chip" data-f="arms" onclick="filterInv('arms')">🧤</button>
+            <button class="chip" data-f="legs" onclick="filterInv('legs')">👢</button>
+          </div>
+          <div class="br-filter-row">
+            <span class="br-count" id="inv-count">0 предметов</span>
+            <button class="mini-btn" onclick="goTo('market')" data-tip="⚒️ <b>Кузница</b><br><small>Купить оружие и броню за золото или славу</small>">⚒️ кузница</button>
+          </div>
+        </div>
+        <div id="inventory-grid" class="br-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ТАВЕРНА ================= -->
+  <section id="screen-tavern" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>🍺 Таверна «Ржавый Гладиус»</h2>
+        <div class="head-actions">
+          <button class="mini-btn beer-btn" onclick="drinkBeer()" data-tip="🍺 <b>Пиво за 25з</b><br><small>Разговор в таверне: бонус к лечению отряда, славе и опыту собак</small>">🍺 выпить пива • 25з</button>
+          <button class="mini-btn" onclick="refreshRecruits(true)" data-tip="🔄 <b>Обновить наёмников</b><br><small>Новые кандидаты за 45 золота</small>">🔄 обновить • 45з</button>
+        </div>
+      </div>
+      <p class="panel-note">Один клик по наёмнику — и он в отряде. Если отряд полон, боец ждёт в резерве.
+        Карточка с ⭐ — опытный боец: он уже в полном снаряжении и с оружием школы, но стоит дороже. Нажмите «📜 Предыстория», чтобы узнать его прошлое.</p>
+      <div id="recruits-grid" class="recruit-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= ПСАРНЯ ================= -->
+  <section id="screen-kennel" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>🐕 Псарня «Злой ошейник»</h2>
+        <button class="mini-btn" onclick="refreshKennel(true)" data-tip="🔄 <b>Новый помёт за 40з</b><br><small>Обновить список доступных боевых псов в псарне</small>">🔄 новый помёт • 40з</button>
+      </div>
+      <p class="panel-note">Псы — отдельные бойцы. Им нельзя купить снаряжение: они выходят на песок такими, какими их привели.</p>
+      <div id="kennel-grid" class="recruit-grid"></div>
+      <div class="kennel-owned">
+        <div class="ko-head">Ваши псы</div>
+        <div id="kennel-owned" class="ko-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= КУЗНИЦА ================= -->
+  <section id="screen-market" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>⚒️ Кузница и лавка бронника</h2>
+        <div class="head-actions">
+          <span class="panel-gold fame">🏆 <b id="market-fame">0</b></span>
+          <button class="mini-btn" onclick="goTo('chests')" data-tip="📦 <b>Сундуки торговца</b><br><small>Лотерея: случайное снаряжение за золото. Чем дороже сундук — тем выше шанс редкой вещи</small>">📦 сундуки</button>
+        <button class="mini-btn" onclick="goTo('cosmetics')" data-tip="🎨 <b>Внешность за славу</b><br><small>Прически, татуировки и боевая раскраска за заработанную на арене славу</small>">🎨 внешность за славу</button>
+        </div>
+      </div>
+      <div id="market-cats"></div>
+      <div id="market-grid" class="item-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= СУНДУКИ ================= -->
+  <section id="screen-chests" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>📦 Торговец сундуками</h2>
+        <span class="panel-gold">💰 <b id="chests-gold">0</b></span>
+      </div>
+      <p class="panel-note">Дороже сундук — выше шанс на хорошее снаряжение. Но иногда внутри только мусор.</p>
+      <div id="chest-grid" class="chest-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= ХРАМ ================= -->
+  <section id="screen-temple" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>🏛️ Храм Медикуса</h2>
+        <div class="head-actions">
+          <span class="panel-gold">💰 <b id="temple-gold">0</b></span>
+          <button class="mini-btn" onclick="healAll()" data-tip="🏥 <b>Вылечить всех</b><br><small>Восстановить HP всем раненым бойцам за золото</small>">вылечить всех</button>
+        </div>
+      </div>
+      <p class="panel-note">Медикус залечит раны и конечности. Отрубленное не возвращается — но покалеченную руку ещё можно спасти.</p>
+      <div id="temple-list" class="temple-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= ТРЕНИРОВКА ================= -->
+  <section id="screen-training" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>🎯 Двор тренировок</h2>
+        <span class="panel-gold">💰 <b id="training-gold">0</b></span>
+      </div>
+      <p class="panel-note">Тренировка — это ритм. Боец бьёт по щиту в такт музыке: нажимайте <b>A S D F</b>, когда метка входит в зону удара. Первый уровень — <b>30 секунд</b> чистого ритма, каждый следующий — на 5 секунд дольше. Промах сбивает серию. Цена: <b>55з</b>.</p>
+      <div class="training-stage">
+        <canvas id="trainingCanvas" width="900" height="300"></canvas>
+      </div>
+      <div id="train-game" class="train-game" style="display:none"></div>
+      <div id="training-list" class="temple-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= КОСМЕТИКА ЗА СЛАВУ ================= -->
+  <section id="screen-cosmetics" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>🎨 Внешность за славу</h2>
+        <div class="head-actions">
+          <span class="panel-gold fame">🏆 <b id="cosmetics-fame">0</b></span>
+          <button class="mini-btn" onclick="goTo('market')" data-tip="⚒️ <b>Кузница</b><br><small>Купить оружие и броню за золото или славу</small>">в кузницу</button>
+        </div>
+      </div>
+      <p class="panel-note">Слава — не деньги: снаряжение на неё больше не купить. Зато толпа запоминает лица. Меняйте облик бойца: рост, телосложение, татуировки, шрамы и боевую раскраску.</p>
+      <div id="cosmetics-list" class="cosmetics-list"></div>
+    </div>
+  </section>
+
+  <!-- ================= ПРОМЫСЕЛ: РЫБАЛКА И ОХОТА ================= -->
+  <section id="screen-fishing" class="screen">
+    <div class="panel wide-panel">
+      <div class="panel-head">
+        <h2>🎣 Промысел</h2>
+        <div class="head-actions">
+          <span class="panel-gold">💰 <b id="fishing-gold">0</b></span>
+          <button class="mini-btn" onclick="goTo('city')" data-tip="🏛️ <b>В город</b><br><small>Вернуться к карте города</small>">в город</button>
+        </div>
+      </div>
+      <p class="panel-note">Честный, но скудный хлеб. Удачный промысел даёт примерно половину золота среднего боя — на арене платят больше.</p>
+      <div class="work-tabs" id="work-tabs"></div>
+      <div class="work-stage">
+        <canvas id="workCanvas" width="900" height="280"></canvas>
+      </div>
+      <div id="work-status" class="work-status"></div>
+      <button class="wide-btn primary" id="work-btn" onclick="workAction()" data-tip="🎣 <b>Промысел</b><br><small>Начать мини-игру: ловите момент, чтобы поймать рыбу или добычу и получить золото</small>">Начать</button>
+      <div class="work-hint" id="work-hint"></div>
+    </div>
+  </section>
+
+  <!-- ================= АРЕНА: ВЫБОР ================= -->
+  <section id="screen-arena" class="screen">
+    <div class="panel arena-prep-panel">
+      <div class="panel-head">
+        <h2>⚔️ Колизей — выберите сложность</h2>
+      </div>
+      <p class="panel-note">Арена выбирается жребием. Вы решаете только, насколько жестоким будет бой.</p>
+      <div id="arena-squad" class="arena-squad"></div>
+      <div id="arena-teams" class="arena-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= БОЙ ================= -->
+  <section id="screen-combat" class="screen combat-screen">
+    <div class="combat-top">
+      <div class="team-block player-side">
+        <div class="tb-label">Ваш отряд</div>
+        <div class="tb-units" id="team-player"></div>
+      </div>
+
+      <div class="round-badge" id="round-badge"></div>
+
+      <div class="team-block enemy-side">
+        <div class="tb-label" id="combat-screen-title">Противник</div>
+        <div class="tb-units" id="team-enemy"></div>
+      </div>
+    </div>
+
+    <div class="arena-wrap">
+      <canvas id="arenaCanvas"></canvas>
+      <div class="arena-labels">
+        <span class="al-arena" id="combat-arena-name"></span>
+        <span class="al-tier" id="combat-tier-badge"></span>
+      </div>
+      <div class="arena-hint" id="combat-hint"></div>
+
+      <!-- Панель прицеливания по конечностям -->
+      <div id="aim-panel" class="aim-panel"></div>
+
+      <!-- Меню действий выбранного бойца -->
+      <div id="unit-menu" class="unit-menu">
+        <div id="um-pointer" class="um-pointer"></div>
+      </div>
+
+      <!-- Уведомление о смене хода -->
+      <div id="turn-toast" class="turn-toast"></div>
+
+      <!-- Кнопки управления прямо на арене -->
+      <div id="combat-controls" class="combat-controls"></div>
+    </div>
+
+    <div class="combat-bottom">
+      <div class="unit-panel" id="unit-panel"></div>
+      <div class="combat-log" id="combat-log"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= ВЫБОР СНАРЯЖЕНИЯ ДЛЯ ПСА ================= -->
+<div id="dog-gear-modal" class="modal-overlay" style="display:none">
+  <div class="panel dog-gear-box">
+    <div class="sp-head">
+      <span class="sp-title">Попона для пса</span>
+      <button class="sp-close" onclick="closeDogGearPicker()">✕</button>
+    </div>
+    <div id="dog-gear-body"></div>
+    <div class="dog-gear-note">Попоны продаются в кузнице на вкладке «🐕 Псы».</div>
+  </div>
+</div>
+
+<!-- ================= ВЫБОР СЛОТА (меню) ================= -->
+<div id="slot-modal" class="modal-overlay" style="display:none">
+  <div class="panel slot-box">
+    <h2>💾 Сохранения</h2>
+    <div id="slot-modal-body"></div>
+    <button class="wide-btn" onclick="closeSlotMenu()" data-tip="Закрыть меню сохранений и вернуться в игру">Закрыть</button>
+  </div>
+</div>
+
+<!-- ================= СОЗДАНИЕ ГЕРОЯ ================= -->
+<div id="creator-modal" class="modal-overlay" style="display:none">
+  <div class="panel creator-box">
+    <h2>⚔️ Создание чемпиона</h2>
+    <div class="creator-body">
+      <div class="creator-preview">
+        <canvas id="creatorCanvas" width="300" height="400"></canvas>
+        <button class="mini-btn" onclick="randomizeCreator()" data-tip="🎲 <b>Случайная внешность</b><br><small>Сгенерировать случайный облик героя</small>">🎲 внешность</button>
+      </div>
+
+      <div class="creator-fields">
+        <div class="creator-grid">
+          <label>Имя
+            <input type="text" id="cr-name" value="Валерий Сильченко" oninput="updateCreatorPreview()">
+          </label>
+          <label>Пол
+            <select id="cr-gender" onchange="updateCreatorPreview()">
+              <option value="male" selected>Мужчина</option>
+              <option value="female">Женщина</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Происхождение
+          <select id="cr-bg" onchange="updateCreatorPreview()">
+            <option value="0">Бывший легионер — крепкий, дисциплинированный</option>
+            <option value="1">Северный наёмник — много здоровья</option>
+            <option value="2">Браконьер — самый ловкий, лучший уклон</option>
+            <option value="3">Кузнец — силач для тяжёлого оружия</option>
+          </select>
+        </label>
+
+        <div class="creator-grid">
+          <label>Стартовое оружие
+            <select id="cr-weapon" onchange="updateCreatorPreview()">
+              <option value="w_rusty">Ржавый гладиус — ближний бой</option>
+              <option value="w_hatchet">Топорик — бронебойный</option>
+              <option value="w_spear">Короткое копьё — 2 клетки</option>
+              <option value="w_shortbow">Охотничий лук — 7 клеток</option>
+              <option value="w_shiv">Заточенный обломок — быстрый</option>
+            </select>
+          </label>
+          <label>Щит
+            <select id="cr-shield" onchange="updateCreatorPreview()">
+              <option value="no">Без щита — чистый урон</option>
+              <option value="yes">Со щитом — блок и защита</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="creator-grid">
+          <label>Телосложение
+            <select id="cr-build" onchange="updateCreatorPreview()">
+              <option value="slim">Худой</option>
+              <option value="normal" selected>Обычный</option>
+              <option value="muscular">Мышцастый</option>
+              <option value="heavy">Тяжёлый</option>
+            </select>
+          </label>
+          <label>Кожа
+            <select id="cr-skin" onchange="updateCreatorPreview()">
+              <option value="#f5c9a4">Светлая</option>
+              <option value="#e8ab7e" selected>Средиземноморская</option>
+              <option value="#cf9468">Загорелая</option>
+              <option value="#a9744c">Смуглая</option>
+              <option value="#7d5236">Тёмная</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="creator-grid">
+          <label>Цвет волос
+            <select id="cr-hair-color" onchange="updateCreatorPreview()">
+              <option value="#2a2118">Вороной</option>
+              <option value="#4a3018" selected>Каштановый</option>
+              <option value="#c9a45c">Русый</option>
+              <option value="#a84a3a">Рыжий</option>
+              <option value="#b8bcc0">Седой</option>
+              <option value="#e4e2dc">Белый</option>
+            </select>
+          </label>
+          <label>Форма лица
+            <select id="cr-face" onchange="updateCreatorPreview()">
+              <option value="classic" selected>Классическое</option>
+              <option value="square">Квадратное</option>
+              <option value="oval">Овальное</option>
+              <option value="round">Круглое</option>
+              <option value="gaunt">Худое</option>
+              <option value="broad">Широкоскулое</option>
+              <option value="pointed">Заострённое</option>
+              <option value="weathered">Обветренное</option>
+            </select>
+          </label>
+          <label>Глаза
+            <select id="cr-eyes" onchange="updateCreatorPreview()">
+              <option value="calm" selected>Спокойные</option>
+              <option value="narrow">Прищуренные</option>
+              <option value="wide">Раскрытые</option>
+              <option value="heavy">Тяжёлые веки</option>
+              <option value="almond">Миндалевидные</option>
+              <option value="deep">Глубокие</option>
+              <option value="hawk">Хищные</option>
+              <option value="sleepy">Сонные</option>
+              <option value="kind">Добрые</option>
+              <option value="stare">Немигающий взгляд</option>
+            </select>
+          </label>
+          <label>Нос
+            <select id="cr-nose" onchange="updateCreatorPreview()">
+              <option value="straight" selected>Прямой</option>
+              <option value="aquiline">Орлиный</option>
+              <option value="button">Курносый</option>
+              <option value="broad">Широкий</option>
+              <option value="thin">Тонкий</option>
+              <option value="broken">С горбинкой</option>
+              <option value="snub">Вздёрнутый</option>
+              <option value="heavy">Тяжёлый</option>
+              <option value="roman">Римский</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="creator-grid">
+          <label>Брови
+            <select id="cr-brows" onchange="updateCreatorPreview()">
+              <option value="natural" selected>Естественные</option>
+              <option value="thick">Густые</option>
+              <option value="thin">Тонкие</option>
+              <option value="straight">Прямые</option>
+              <option value="arched">Дугой</option>
+              <option value="angry">Сдвинутые</option>
+              <option value="worried">Домиком</option>
+              <option value="bushy">Косматые</option>
+              <option value="unibrow">Сросшиеся</option>
+            </select>
+          </label>
+          <label>Рот
+            <select id="cr-mouth" onchange="updateCreatorPreview()">
+              <option value="neutral" selected>Обычный</option>
+              <option value="thin">Тонкие губы</option>
+              <option value="full">Полные губы</option>
+              <option value="wide">Широкий рот</option>
+              <option value="small">Маленький рот</option>
+              <option value="grim">Жёсткий</option>
+              <option value="smirk">Ухмылка</option>
+              <option value="scarred">Перекошенный</option>
+            </select>
+          </label>
+        </div>
+        <div class="creator-grid">
+          <label>Борода
+            <select id="cr-beard" onchange="updateCreatorPreview()">
+              <option value="none">Нет</option>
+              <option value="stubble">Щетина</option>
+              <option value="full" selected>Густая</option>
+              <option value="long">Длинная</option>
+              <option value="goatee">Козлиная</option>
+              <option value="moustache">Усы</option>
+              <option value="shortbox">Короткая окладистая</option>
+              <option value="verdi">Верди</option>
+              <option value="chinstrap">По контуру</option>
+              <option value="imperial">Имперская</option>
+              <option value="horseshoe">Подкова</option>
+              <option value="vandyke">Ван Дейк</option>
+              <option value="garibaldi">Гарибальди</option>
+              <option value="anchor">Якорь</option>
+              <option value="ducktail">Утиный хвост</option>
+              <option value="sidewhiskers">Бакенбарды</option>
+            </select>
+          </label>
+          <label>Причёска
+            <select id="cr-hair-style" onchange="updateCreatorPreview()">
+              <option value="short" selected>Короткая</option>
+              <option value="long">Длинная</option>
+              <option value="ponytail">Хвост</option>
+              <option value="braids">Косы</option>
+              <option value="bun">Пучок</option>
+              <option value="mohawk">Ирокез</option>
+              <option value="curly">Кудри</option>
+              <option value="dreadlocks">Дреды</option>
+              <option value="topknot">Узел</option>
+              <option value="shaved">Бритый</option>
+              <option value="bald">Лысый</option>
+              <option value="crew">Ёжик</option>
+              <option value="slick">Зачёс назад</option>
+              <option value="parted">Пробор</option>
+              <option value="fringe">Чёлка</option>
+              <option value="spiky">Рваные пряди</option>
+              <option value="halfup">Полухвост</option>
+              <option value="twinbraids">Две косы</option>
+              <option value="afro">Афро</option>
+              <option value="wavy">Волны</option>
+              <option value="undercut">Выбритый висок</option>
+            </select>
+          </label>
+        </div>
+
+        <button class="wide-btn primary big" onclick="confirmCreateHero()">🔥 Начать путь на арене</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= РАССТАНОВКА ПЕРЕД БОЕМ ================= -->
+<div id="deploy-modal" class="modal-overlay" style="display:none">
+  <div class="panel deploy-box">
+    <div id="deploy-body"></div>
+  </div>
+</div>
+
+<!-- ================= РАСПРЕДЕЛЕНИЕ ОЧКОВ ================= -->
+<div id="levelup-modal" class="modal-overlay" style="display:none">
+  <div class="panel levelup-box">
+    <h2>🎉 Повышение уровня</h2>
+    <div id="levelup-body"></div>
+    <button class="wide-btn primary" onclick="closeLevelUp()" data-tip="Завершить распределение очков характеристик">Готово</button>
+  </div>
+</div>
+
+<!-- ================= ВЫБОР НАВЫКА (каждые 3 уровня) ================= -->
+<div id="skill-modal" class="modal-overlay" style="display:none">
+  <div class="panel skill-box">
+    <h2>🌟 Новый навык</h2>
+    <div id="skill-body"></div>
+    <button class="wide-btn" onclick="closeSkillPicker()" data-tip="Выбрать навык позже — окно откроется снова">Позже</button>
+  </div>
+</div>
+
+<!-- ================= СПРАВКА ================= -->
+<div id="help-modal" class="modal-overlay" style="display:none">
+  <div class="panel help-box">
+    <div class="help-top">
+      <h2>❓ Справка</h2>
+      <button class="mini-btn" onclick="closeHelp()">✕</button>
+    </div>
+    <div id="help-body"></div>
+  </div>
+</div>
+
+<!-- ================= ИТОГ БОЯ ================= -->
+<div id="combat-result" class="modal-overlay" style="display:none">
+  <div class="panel result-box">
+    <div id="combat-result-body"></div>
+    <button class="wide-btn primary" id="result-btn-arena" onclick="document.getElementById('combat-result').style.display='none'; goTo('arena')">К аренам</button>
+    <button class="wide-btn" onclick="document.getElementById('combat-result').style.display='none'; goTo('city')">В город</button>
+  </div>
+</div>
+
+<!-- ================= СЛУЧАЙНОЕ СОБЫТИЕ ================= -->
+<div id="event-modal" class="modal-overlay" style="display:none">
+  <div class="panel event-box">
+    <div id="event-body"></div>
+  </div>
+</div>
+
+<!-- ================= СУНДУК ================= -->
+<div id="chest-modal" class="modal-overlay" style="display:none">
+  <div class="panel chest-box">
+    <div id="chest-body"></div>
+    <button class="wide-btn primary" id="chest-take-btn" onclick="closeChestModal()" data-tip="Забрать добычу и закрыть сундук" disabled>Забрать</button>
+  </div>
+</div>
+
+<!-- ================= ПИВО И РАЗГОВОР ================= -->
+<div id="beer-modal" class="modal-overlay" style="display:none">
+  <div class="panel beer-box">
+    <div id="beer-body"></div>
+    <button class="wide-btn primary" onclick="closeBeerModal()" data-tip="Завершить разговор в таверне">Довольно</button>
+  </div>
+</div>
+
+  <!-- ================= ПРЕДЫСТОРИЯ НАЁМНИКА ================= -->
+  <div id="recruit-lore-modal" class="modal-overlay" style="display:none">
+    <div class="panel lore-box">
+      <div class="help-top">
+        <h2>📜 Предыстория</h2>
+        <button class="mini-btn" onclick="closeRecruitLore()">✕</button>
+      </div>
+      <div id="lore-body" class="lore-body"></div>
+      <button class="wide-btn primary" onclick="closeRecruitLore()">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- ================= СЮЖЕТ ================= -->
+  <div id="story-modal" class="modal-overlay" style="display:none">
+  <div class="panel story-box">
+    <div id="story-body"></div>
+    <button class="wide-btn primary" onclick="closeStoryModal()" data-tip="Продолжить игру после сюжетной сцены">Продолжить</button>
+  </div>
+</div>
+
+<!-- ================= КОНЕЦ ИГРЫ ================= -->
+<div id="gameover-modal" class="modal-overlay" style="display:none">
+  <div class="panel gameover-box">
+    <div id="gameover-body"></div>
+    <button class="wide-btn primary" onclick="restartFromGameOver()" data-tip="Начать новую игру с чистого листа — все данные текущего сохранения будут потеряны">Начать заново</button>
+    <button class="wide-btn" onclick="openSlotMenu()">Другие сохранения</button>
+  </div>
+</div>
+
+<!-- ================= СООБЩЕНИЕ ================= -->
+<div id="vk-alert-modal" class="modal-overlay" style="display:none; z-index:200;">
+  <div class="panel alert-box">
+    <h2>📜 Весть с арены</h2>
+    <p id="vk-alert-text"></p>
+    <button class="wide-btn primary" onclick="document.getElementById('vk-alert-modal').style.display='none'">Понятно</button>
+  </div>
+</div>
+
+<script>
+  window.alert = function (message) {
+    document.getElementById('vk-alert-text').textContent = message;
+    document.getElementById('vk-alert-modal').style.display = 'flex';
+  };
+</script>
+
+<script src="audio.js?v=42"></script>
+<script src="data.js?v=42"></script>
+<script src="save.js?v=42"></script>
+<script src="renderer.js?v=42"></script>
+<script src="events.js?v=42"></script>
+<script src="combat.js?v=42"></script>
+<script src="game.js?v=42"></script>
+<script>initGame();</script>
+</body>
+</html>

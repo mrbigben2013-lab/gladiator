@@ -1,0 +1,682 @@
+function drawCityBuilding(c, loc, x, baseY, h, rand) {
+  const id = loc.id;
+
+  // Площадка-ромб: утоптанная плита под домом
+  const pax = h * 1.00, pay = pax * 0.40;
+  c.beginPath();
+  c.moveTo(x, baseY - pay);
+  c.lineTo(x + pax, baseY);
+  c.lineTo(x, baseY + pay);
+  c.lineTo(x - pax, baseY);
+  c.closePath();
+  c.fillStyle = 'rgba(206,186,150,0.92)';
+  c.fill();
+  c.strokeStyle = 'rgba(74,54,34,0.22)';
+  c.lineWidth = 1.2;
+  c.stroke();
+
+  // Мягкая тень дома на площадке
+  c.beginPath();
+  c.ellipse(x + h * 0.10, baseY + pay * 0.34, pax * 0.80, pay * 0.56, 0, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(30,20,12,0.16)';
+  c.fill();
+
+  if (id === 'training') { drawCityYard(c, x, baseY, h, rand); return; }
+  if (id === 'chests')   { drawCityStall(c, x, baseY, h); return; }
+  if (id === 'arena')    { drawCityArena(c, x, baseY, h); return; }
+  if (id === 'temple')   { drawCityTemple(c, x, baseY, h); return; }
+  if (id === 'tavern')   { drawCityTavern(c, x, baseY, h); return; }
+  if (id === 'barracks') { drawCityBarracks(c, x, baseY, h); return; }
+  if (id === 'kennel')   { drawCityKennel(c, x, baseY, h); return; }
+  drawCityForge(c, x, baseY, h);
+}
+
+// ---------- Базовая геометрия ----------
+// Четыре угла основания ромба (изометрия 2:1).
+function isoCorners(x, y, ax, ay) {
+  return {
+    L: { x: x - ax, y: y },          // левый
+    B: { x: x, y: y + ay },          // передний
+    R: { x: x + ax, y: y },          // правый
+    D: { x: x, y: y - ay }           // задний
+  };
+}
+
+// Стена дома: две видимые грани (левая и правая) с цоколем и штукатуркой.
+function isoWalls(c, x, y, ax, ay, h, col) {
+  const k = isoCorners(x, y, ax, ay);
+  const edge = 'rgba(44,30,18,0.42)';
+
+  // левая грань
+  c.beginPath();
+  c.moveTo(k.L.x, k.L.y - h);
+  c.lineTo(k.B.x, k.B.y - h);
+  c.lineTo(k.B.x, k.B.y);
+  c.lineTo(k.L.x, k.L.y);
+  c.closePath();
+  c.fillStyle = col.left;
+  c.fill();
+  c.strokeStyle = edge;
+  c.lineWidth = 1.1;
+  c.stroke();
+
+  // правая грань
+  c.beginPath();
+  c.moveTo(k.B.x, k.B.y - h);
+  c.lineTo(k.R.x, k.R.y - h);
+  c.lineTo(k.R.x, k.R.y);
+  c.lineTo(k.B.x, k.B.y);
+  c.closePath();
+  c.fillStyle = col.right;
+  c.fill();
+  c.stroke();
+
+  // цоколь — тёмная полоса по низу обеих граней
+  if (col.plinth !== false) {
+    const ph = h * 0.09;
+    c.fillStyle = 'rgba(40,28,18,0.28)';
+    c.beginPath();
+    c.moveTo(k.L.x, k.L.y - ph);
+    c.lineTo(k.B.x, k.B.y - ph);
+    c.lineTo(k.B.x, k.B.y);
+    c.lineTo(k.L.x, k.L.y);
+    c.closePath();
+    c.fill();
+    c.beginPath();
+    c.moveTo(k.B.x, k.B.y - ph);
+    c.lineTo(k.R.x, k.R.y - ph);
+    c.lineTo(k.R.x, k.R.y);
+    c.lineTo(k.B.x, k.B.y);
+    c.closePath();
+    c.fill();
+  }
+  return k;
+}
+
+// Двускатная черепичная крыша: конёк идёт по диагонали (от заднего угла
+// к переднему), поэтому видны оба ската и получается объём.
+function isoRoof(c, x, y, ax, ay, h, roofH, col) {
+  const k = isoCorners(x, y, ax, ay);
+  const top = h;
+  const ridgeBack = { x: x, y: y - ay - top - roofH };
+  const ridgeFront = { x: x, y: y + ay - top - roofH };
+  const edge = 'rgba(48,26,16,0.50)';
+
+  // левый скат: L → конёк(зад) → конёк(перед) → B
+  c.beginPath();
+  c.moveTo(k.L.x, k.L.y - top);
+  c.lineTo(ridgeBack.x, ridgeBack.y);
+  c.lineTo(ridgeFront.x, ridgeFront.y);
+  c.lineTo(k.B.x, k.B.y - top);
+  c.closePath();
+  c.fillStyle = col.left;
+  c.fill();
+  c.strokeStyle = edge;
+  c.lineWidth = 1.2;
+  c.stroke();
+
+  // правый скат: B → конёк(перед) → конёк(зад) → R
+  c.beginPath();
+  c.moveTo(k.B.x, k.B.y - top);
+  c.lineTo(ridgeFront.x, ridgeFront.y);
+  c.lineTo(ridgeBack.x, ridgeBack.y);
+  c.lineTo(k.R.x, k.R.y - top);
+  c.closePath();
+  c.fillStyle = col.right;
+  c.fill();
+  c.stroke();
+
+  // черепица: тонкие полосы вдоль ската
+  c.save();
+  c.beginPath();
+  c.moveTo(k.L.x, k.L.y - top);
+  c.lineTo(ridgeBack.x, ridgeBack.y);
+  c.lineTo(ridgeFront.x, ridgeFront.y);
+  c.lineTo(k.B.x, k.B.y - top);
+  c.closePath();
+  c.clip();
+  c.strokeStyle = col.tile || 'rgba(60,28,18,0.30)';
+  c.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    const t = i / 5;
+    c.beginPath();
+    c.moveTo(k.L.x + (ridgeBack.x - k.L.x) * t, (k.L.y - top) + (ridgeBack.y - (k.L.y - top)) * t);
+    c.lineTo(k.B.x + (ridgeFront.x - k.B.x) * t, (k.B.y - top) + (ridgeFront.y - (k.B.y - top)) * t);
+    c.stroke();
+  }
+  c.restore();
+
+  c.save();
+  c.beginPath();
+  c.moveTo(k.B.x, k.B.y - top);
+  c.lineTo(ridgeFront.x, ridgeFront.y);
+  c.lineTo(ridgeBack.x, ridgeBack.y);
+  c.lineTo(k.R.x, k.R.y - top);
+  c.closePath();
+  c.clip();
+  for (let i = 1; i <= 4; i++) {
+    const t = i / 5;
+    c.beginPath();
+    c.moveTo(k.R.x + (ridgeBack.x - k.R.x) * t, (k.R.y - top) + (ridgeBack.y - (k.R.y - top)) * t);
+    c.lineTo(k.B.x + (ridgeFront.x - k.B.x) * t, (k.B.y - top) + (ridgeFront.y - (k.B.y - top)) * t);
+    c.stroke();
+  }
+  c.restore();
+
+  // конёк
+  c.strokeStyle = col.ridge || 'rgba(70,34,22,0.85)';
+  c.lineWidth = Math.max(2, roofH * 0.16);
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(ridgeBack.x, ridgeBack.y);
+  c.lineTo(ridgeFront.x, ridgeFront.y);
+  c.stroke();
+  c.lineCap = 'butt';
+
+  return { ridgeBack, ridgeFront };
+}
+
+// Окно на левой грани (грань уходит влево-вверх)
+function isoWindowLeft(c, x, y, w, h, glow) {
+  c.fillStyle = 'rgba(38,26,16,0.55)';
+  c.fillRect(x - w / 2, y - h, w, h);
+  if (glow) {
+    c.fillStyle = 'rgba(255,198,104,0.85)';
+    c.fillRect(x - w / 2 + 1.5, y - h + 1.5, w - 3, h - 3);
+  }
+  c.strokeStyle = 'rgba(30,20,12,0.75)';
+  c.lineWidth = 1.2;
+  c.strokeRect(x - w / 2, y - h, w, h);
+  c.beginPath();
+  c.moveTo(x, y - h);
+  c.lineTo(x, y);
+  c.stroke();
+}
+
+// Дверь-арка на правой грани
+function isoDoor(c, x, y, w, h, col) {
+  c.beginPath();
+  c.moveTo(x - w / 2, y);
+  c.lineTo(x - w / 2, y - h * 0.70);
+  c.quadraticCurveTo(x, y - h * 1.12, x + w / 2, y - h * 0.70);
+  c.lineTo(x + w / 2, y);
+  c.closePath();
+  c.fillStyle = col || '#3a2614';
+  c.fill();
+  c.strokeStyle = 'rgba(24,16,10,0.6)';
+  c.lineWidth = 1.2;
+  c.stroke();
+}
+
+// Колизей: эллиптический амфитеатр с двумя ярусами арок
+function drawCityArena(c, x, y, h) {
+  const ax = h * 1.10, ay = ax * 0.34;
+  const bodyH = h * 0.78;
+  const topY = y - bodyH;
+
+  c.beginPath();
+  c.moveTo(x - ax, y);
+  c.lineTo(x - ax, topY);
+  c.ellipse(x, topY, ax, ay, 0, Math.PI, 0, true);
+  c.lineTo(x + ax, y);
+  c.ellipse(x, y, ax, ay, 0, 0, Math.PI, false);
+  c.closePath();
+  const g = c.createLinearGradient(x - ax, 0, x + ax, 0);
+  g.addColorStop(0, '#cdb58c');
+  g.addColorStop(0.32, '#b9a077');
+  g.addColorStop(1, '#806a4a');
+  c.fillStyle = g;
+  c.fill();
+  c.strokeStyle = 'rgba(52,38,22,0.40)';
+  c.lineWidth = 1.3;
+  c.stroke();
+
+  // арки по передней дуге, в два яруса
+  c.save();
+  c.beginPath();
+  c.moveTo(x - ax, y);
+  c.lineTo(x - ax, topY);
+  c.ellipse(x, topY, ax, ay, 0, Math.PI, 0, true);
+  c.lineTo(x + ax, y);
+  c.ellipse(x, y, ax, ay, 0, 0, Math.PI, false);
+  c.closePath();
+  c.clip();
+  for (let row = 0; row < 2; row++) {
+    const ry = y - bodyH * (0.20 + row * 0.36);
+    const cols = 9;
+    for (let i = 0; i < cols; i++) {
+      const ang = Math.PI * ((i + 0.5) / cols);
+      const px = x - Math.cos(ang) * ax * 0.95;
+      const py = ry + Math.sin(ang) * ay * 0.60;
+      const sk = 0.5 + Math.sin(ang) * 0.5;
+      c.fillStyle = `rgba(44,29,17,${0.34 + sk * 0.34})`;
+      isoArch(c, px, py, h * 0.095 * sk, h * 0.15 * sk);
+      c.fill();
+    }
+  }
+  // карниз между ярусами
+  c.fillStyle = 'rgba(255,236,196,0.13)';
+  c.fillRect(x - ax, y - bodyH * 0.53, ax * 2, Math.max(1.6, bodyH * 0.018));
+  c.restore();
+
+  // верхний обод
+  c.beginPath();
+  c.ellipse(x, topY, ax, ay, 0, 0, Math.PI * 2);
+  c.fillStyle = '#ccb48b';
+  c.fill();
+  c.strokeStyle = 'rgba(52,38,22,0.40)';
+  c.lineWidth = 1.3;
+  c.stroke();
+  c.beginPath();
+  c.ellipse(x, topY, ax * 0.74, ay * 0.72, 0, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(72,52,33,0.60)';
+  c.fill();
+
+  c.strokeStyle = 'rgba(255,238,200,0.26)';
+  c.lineWidth = 1.8;
+  c.beginPath();
+  c.ellipse(x, topY, ax * 0.97, ay * 0.97, 0, Math.PI * 1.08, Math.PI * 1.92);
+  c.stroke();
+}
+
+// Храм: подиум, колонны, антаблемент, фронтон
+function drawCityTemple(c, x, y, h) {
+  const ax = h * 0.74, ay = ax * 0.40;
+  const podH = h * 0.14;
+
+  // подиум
+  isoWalls(c, x, y, ax * 1.10, ay * 1.10, podH, {
+    left: '#c4bcaa', right: '#a49c8a', plinth: false
+  });
+  c.beginPath();
+  const k = isoCorners(x, y, ax * 1.10, ay * 1.10);
+  c.moveTo(k.D.x, k.D.y - podH);
+  c.lineTo(k.R.x, k.R.y - podH);
+  c.lineTo(k.B.x, k.B.y - podH);
+  c.lineTo(k.L.x, k.L.y - podH);
+  c.closePath();
+  c.fillStyle = '#d8d0bc';
+  c.fill();
+  c.strokeStyle = 'rgba(60,48,34,0.32)';
+  c.lineWidth = 1.1;
+  c.stroke();
+
+  const baseY = y - podH;
+  const colH = h * 0.46;
+
+  // целла — глухая задняя стена
+  c.beginPath();
+  c.moveTo(x - ax * 0.74, baseY);
+  c.lineTo(x - ax * 0.74, baseY - colH);
+  c.lineTo(x + ax * 0.74, baseY - colH);
+  c.lineTo(x + ax * 0.74, baseY);
+  c.closePath();
+  c.fillStyle = 'rgba(88,72,52,0.72)';
+  c.fill();
+
+  // колонны по переднему фасаду
+  const cols = 5;
+  for (let i = 0; i < cols; i++) {
+    const t = i / (cols - 1);
+    const px = x - ax * 0.72 + t * ax * 1.44;
+    const py = baseY + ay * 0.42;
+    drawCityColumn(c, px, py, colH, Math.max(3, h * 0.050));
+  }
+
+  // антаблемент
+  c.fillStyle = '#e0d7c0';
+  c.beginPath();
+  c.moveTo(x - ax * 0.90, baseY - colH);
+  c.lineTo(x - ax * 0.90, baseY - colH - h * 0.06);
+  c.lineTo(x + ax * 0.90, baseY - colH - h * 0.06);
+  c.lineTo(x + ax * 0.90, baseY - colH);
+  c.closePath();
+  c.fill();
+  c.strokeStyle = 'rgba(60,48,34,0.30)';
+  c.lineWidth = 1.1;
+  c.stroke();
+
+  // фронтон
+  const pedY = baseY - colH - h * 0.06;
+  const tg = c.createLinearGradient(0, pedY - h * 0.22, 0, pedY);
+  tg.addColorStop(0, '#f1e8d0');
+  tg.addColorStop(1, '#b6ac96');
+  c.fillStyle = tg;
+  c.beginPath();
+  c.moveTo(x - ax * 0.92, pedY);
+  c.lineTo(x, pedY - h * 0.22);
+  c.lineTo(x + ax * 0.92, pedY);
+  c.closePath();
+  c.fill();
+  c.strokeStyle = 'rgba(64,52,38,0.42)';
+  c.lineWidth = 1.2;
+  c.stroke();
+  // тимпан
+  c.fillStyle = 'rgba(96,78,56,0.28)';
+  c.beginPath();
+  c.moveTo(x - ax * 0.62, pedY - h * 0.03);
+  c.lineTo(x, pedY - h * 0.155);
+  c.lineTo(x + ax * 0.62, pedY - h * 0.03);
+  c.closePath();
+  c.fill();
+}
+
+// Таверна: два этажа, черепица, тёплые окна, вывеска, бочки
+function drawCityTavern(c, x, y, h) {
+  const ax = h * 0.62, ay = ax * 0.44;
+  const bodyH = h * 0.66;
+  const k = isoWalls(c, x, y, ax, ay, bodyH, {
+    left: '#a8835a', right: '#8a6a46'
+  });
+
+  // окна: два этажа
+  for (let row = 0; row < 2; row++) {
+    const wy = y - bodyH * (0.30 + row * 0.34);
+    isoWindowLeft(c, x - ax * 0.62, wy, ax * 0.22, bodyH * 0.17, true);
+    isoWindowLeft(c, x - ax * 0.30, wy + ay * 0.20, ax * 0.20, bodyH * 0.15, true);
+  }
+
+  // дверь на правой грани
+  isoDoor(c, x + ax * 0.40, y - ay * 0.05, ax * 0.24, bodyH * 0.42);
+
+  // крыша
+  const roofH = h * 0.26;
+  isoRoof(c, x, y, ax * 1.12, ay * 1.12, bodyH, roofH, {
+    left: '#b0563a', right: '#8f422c', tile: 'rgba(58,24,14,0.34)'
+  });
+
+  // вывеска на кронштейне (справа)
+  const sx = x + ax * 1.02, sy = y - bodyH * 0.74;
+  c.strokeStyle = '#3a2a18';
+  c.lineWidth = Math.max(1.4, h * 0.012);
+  c.beginPath();
+  c.moveTo(sx, sy);
+  c.lineTo(sx + ax * 0.26, sy);
+  c.stroke();
+  c.fillStyle = '#d3ab5f';
+  c.fillRect(sx + ax * 0.04, sy, ax * 0.20, bodyH * 0.16);
+  c.strokeStyle = 'rgba(40,26,14,0.55)';
+  c.lineWidth = 1;
+  c.strokeRect(sx + ax * 0.04, sy, ax * 0.20, bodyH * 0.16);
+
+  // бочки у входа
+  c.fillStyle = '#6b4a2e';
+  c.fillRect(x + ax * 0.12, y + ay * 0.26 - bodyH * 0.15, ax * 0.15, bodyH * 0.15);
+  c.fillStyle = '#7d5836';
+  c.fillRect(x + ax * 0.30, y + ay * 0.42 - bodyH * 0.12, ax * 0.13, bodyH * 0.12);
+}
+
+// Казарма (лудус): длинный барак, красная черепица, знамёна
+function drawCityBarracks(c, x, y, h) {
+  const ax = h * 0.86, ay = ax * 0.34;
+  const bodyH = h * 0.50;
+  isoWalls(c, x, y, ax, ay, bodyH, {
+    left: '#b08a5e', right: '#8f6d47'
+  });
+
+  // ряд узких окон-бойниц
+  for (let i = 0; i < 3; i++) {
+    const t = (i + 0.5) / 3;
+    const wy = y - bodyH * 0.62;
+    isoWindowLeft(c, x - ax * 0.80 + t * ax * 0.62, wy + ay * 0.18, ax * 0.075, bodyH * 0.20, false);
+  }
+
+  // дверь
+  isoDoor(c, x + ax * 0.34, y - ay * 0.02, ax * 0.20, bodyH * 0.46);
+
+  // крыша
+  isoRoof(c, x, y, ax * 1.10, ay * 1.10, bodyH, h * 0.24, {
+    left: '#a4553a', right: '#83402b', tile: 'rgba(56,24,14,0.32)'
+  });
+
+  // знамёна на шестах над крышей
+  const flagY = y - bodyH - h * 0.16;
+  c.strokeStyle = '#4a3320';
+  c.lineWidth = Math.max(1.4, h * 0.011);
+  c.beginPath();
+  c.moveTo(x - ax * 0.42, flagY);
+  c.lineTo(x - ax * 0.42, flagY - h * 0.20);
+  c.moveTo(x + ax * 0.10, flagY - ay * 0.40);
+  c.lineTo(x + ax * 0.10, flagY - ay * 0.40 - h * 0.18);
+  c.stroke();
+
+  const flag = (fx, fy, dir) => {
+    c.fillStyle = '#a83a2c';
+    c.beginPath();
+    c.moveTo(fx, fy);
+    c.lineTo(fx + dir * ax * 0.16, fy + h * 0.035);
+    c.lineTo(fx + dir * ax * 0.15, fy + h * 0.135);
+    c.lineTo(fx, fy + h * 0.16);
+    c.closePath();
+    c.fill();
+  };
+  flag(x - ax * 0.42, flagY - h * 0.20, 1);
+  flag(x + ax * 0.10, flagY - ay * 0.40 - h * 0.18, 1);
+}
+
+// Кузница: каменный низ, тёмный проём, навес, горн, наковальня, дым
+function drawCityForge(c, x, y, h) {
+  const ax = h * 0.74, ay = ax * 0.42;
+  const bodyH = h * 0.46;
+
+  isoWalls(c, x, y, ax, ay, bodyH, {
+    left: '#8b7860', right: '#6f5f4a'
+  });
+
+  // тёмный проём мастерской
+  c.beginPath();
+  c.moveTo(x - ax * 0.62, y - ay * 0.22);
+  c.lineTo(x - ax * 0.62, y - bodyH * 0.88);
+  c.lineTo(x + ax * 0.30, y - bodyH * 0.88 + ay * 0.36);
+  c.lineTo(x + ax * 0.30, y - ay * 0.02);
+  c.closePath();
+  c.fillStyle = 'rgba(28,19,12,0.78)';
+  c.fill();
+
+  // навес над проёмом
+  const roofH = h * 0.20;
+  isoRoof(c, x, y, ax * 1.06, ay * 1.06, bodyH, roofH, {
+    left: '#7f5238', right: '#65402a', tile: 'rgba(40,20,12,0.30)'
+  });
+
+  // наковальня справа
+  c.fillStyle = '#4a4a52';
+  c.fillRect(x + ax * 0.30, y - bodyH * 0.34, ax * 0.22, h * 0.040);
+  c.fillRect(x + ax * 0.37, y - bodyH * 0.30, ax * 0.09, bodyH * 0.30);
+
+  // горн с огнём — поверх, у левого края
+  const fx = x - ax * 0.44, fy = y - bodyH * 0.30;
+  c.fillStyle = '#5a4433';
+  c.beginPath();
+  c.moveTo(fx - ax * 0.16, fy);
+  c.lineTo(fx - ax * 0.13, fy - bodyH * 0.30);
+  c.lineTo(fx + ax * 0.13, fy - bodyH * 0.30);
+  c.lineTo(fx + ax * 0.16, fy);
+  c.closePath();
+  c.fill();
+  const fg = c.createRadialGradient(fx, fy - bodyH * 0.22, 1, fx, fy - bodyH * 0.22, h * 0.20);
+  fg.addColorStop(0, 'rgba(255,228,158,0.95)');
+  fg.addColorStop(0.40, 'rgba(246,142,56,0.55)');
+  fg.addColorStop(1, 'rgba(200,70,30,0)');
+  c.fillStyle = fg;
+  c.beginPath(); c.arc(fx, fy - bodyH * 0.22, h * 0.20, 0, Math.PI * 2); c.fill();
+
+  // дым
+  for (let i = 0; i < 3; i++) {
+    c.fillStyle = `rgba(196,186,174,${0.08 + i * 0.025})`;
+    c.beginPath();
+    c.ellipse(x - ax * (0.20 + i * 0.05), y - bodyH - h * (0.22 + i * 0.17), h * (0.09 + i * 0.035), h * 0.075, 0, 0, Math.PI * 2);
+    c.fill();
+  }
+}
+
+// Псарня: низкий дом, конура-лаз, загон с кольями
+function drawCityKennel(c, x, y, h) {
+  const ax = h * 0.62, ay = ax * 0.42;
+  const bodyH = h * 0.34;
+  isoWalls(c, x, y, ax, ay, bodyH, {
+    left: '#a89c88', right: '#8a7f6c'
+  });
+
+  // конура-лаз на правой грани
+  c.beginPath();
+  c.moveTo(x + ax * 0.16, y - ay * 0.06);
+  c.lineTo(x + ax * 0.16, y - bodyH * 0.46);
+  c.quadraticCurveTo(x + ax * 0.40, y - bodyH * 0.72, x + ax * 0.62, y - bodyH * 0.40);
+  c.lineTo(x + ax * 0.62, y + ay * 0.08);
+  c.closePath();
+  c.fillStyle = 'rgba(28,20,14,0.80)';
+  c.fill();
+
+  // крыша соломенная
+  isoRoof(c, x, y, ax * 1.12, ay * 1.12, bodyH, h * 0.20, {
+    left: '#b9a06a', right: '#9a8152', tile: 'rgba(70,52,26,0.28)', ridge: 'rgba(120,96,50,0.85)'
+  });
+
+  // загон: колья и перекладина
+  c.strokeStyle = '#5a4630';
+  c.lineWidth = Math.max(1.4, h * 0.012);
+  for (let i = 0; i < 4; i++) {
+    const px = x - ax * 0.94 - i * ax * 0.14;
+    c.beginPath();
+    c.moveTo(px, y + ay * 0.34);
+    c.lineTo(px, y + ay * 0.34 - bodyH * 0.66);
+    c.stroke();
+  }
+  c.beginPath();
+  c.moveTo(x - ax * 1.36, y + ay * 0.34 - bodyH * 0.46);
+  c.lineTo(x - ax * 0.90, y + ay * 0.34 - bodyH * 0.46);
+  c.stroke();
+}
+
+// Торговец сундуками: прилавок под полосатым навесом, сундуки, фонарь
+function drawCityStall(c, x, y, h) {
+  const ax = h * 0.64, ay = ax * 0.44;
+  const counterH = h * 0.22;
+  const postH = h * 0.56;
+
+  // прилавок
+  isoWalls(c, x, y, ax * 0.92, ay * 0.92, counterH, {
+    left: '#9a7550', right: '#7c5c3c', plinth: false
+  });
+  const k = isoCorners(x, y, ax * 0.92, ay * 0.92);
+  c.beginPath();
+  c.moveTo(k.D.x, k.D.y - counterH);
+  c.lineTo(k.R.x, k.R.y - counterH);
+  c.lineTo(k.B.x, k.B.y - counterH);
+  c.lineTo(k.L.x, k.L.y - counterH);
+  c.closePath();
+  c.fillStyle = '#b08a5e';
+  c.fill();
+  c.strokeStyle = 'rgba(60,44,26,0.35)';
+  c.lineWidth = 1.1;
+  c.stroke();
+
+  // столбы
+  c.fillStyle = '#6b4a2e';
+  c.fillRect(x - ax * 0.86, y - postH, Math.max(3, h * 0.032), postH - counterH * 0.4);
+  c.fillRect(x + ax * 0.80, y - postH - ay * 0.48, Math.max(3, h * 0.032), postH - counterH * 0.4);
+
+  // полосатый навес
+  const roofY = y - postH;
+  c.beginPath();
+  c.moveTo(x - ax * 1.02, roofY);
+  c.lineTo(x - ax * 0.30, roofY - h * 0.18);
+  c.lineTo(x + ax * 0.30, roofY - h * 0.18 - ay * 0.56);
+  c.lineTo(x + ax * 1.02, roofY - ay * 0.56);
+  c.lineTo(x + ax * 1.02, roofY);
+  c.lineTo(x, roofY + ay);
+  c.closePath();
+  c.fillStyle = '#d8c08a';
+  c.fill();
+  c.strokeStyle = 'rgba(60,44,26,0.42)';
+  c.lineWidth = 1.2;
+  c.stroke();
+  c.strokeStyle = 'rgba(150,64,42,0.50)';
+  c.lineWidth = Math.max(2.5, h * 0.028);
+  for (let i = 0; i < 3; i++) {
+    const t = (i + 1) / 4;
+    c.beginPath();
+    c.moveTo(x - ax * 1.02 + ax * 2.04 * t, roofY - ay * 0.56 * t);
+    c.lineTo(x - ax * 1.02 + ax * 2.04 * t, roofY - ay * 0.56 * t + ay);
+    c.stroke();
+  }
+
+  // сундуки на прилавке
+  const chestBase = y - counterH;
+  [{ xo: -0.34, w: 0.38, wood: '#8a5a30', band: '#c9a45c' },
+   { xo: 0.16, w: 0.34, wood: '#6f4a2a', band: '#b08a4a' }].forEach(cfg => {
+    const cx = x + ax * cfg.xo, cw = ax * cfg.w, ch = h * 0.11;
+    c.fillStyle = cfg.wood;
+    c.fillRect(cx - cw / 2, chestBase - ch, cw, ch);
+    c.strokeStyle = 'rgba(30,20,12,0.55)';
+    c.lineWidth = 1.1;
+    c.strokeRect(cx - cw / 2, chestBase - ch, cw, ch);
+    c.fillStyle = cfg.band;
+    c.fillRect(cx - cw * 0.09, chestBase - ch * 0.62, cw * 0.18, ch * 0.26);
+  });
+
+  // фонарь
+  c.fillStyle = 'rgba(255,204,116,0.85)';
+  c.beginPath();
+  c.arc(x + ax * 0.72, roofY + ay * 0.26, h * 0.040, 0, Math.PI * 2);
+  c.fill();
+}
+
+// Двор тренировок: утоптанная площадка, столб с мишенью, чучело, ограда
+function drawCityYard(c, x, y, h, rand) {
+  c.beginPath();
+  c.ellipse(x, y, h * 0.92, h * 0.38, 0, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(190,164,122,0.94)';
+  c.fill();
+  c.strokeStyle = 'rgba(74,54,34,0.24)';
+  c.lineWidth = 1.2;
+  c.stroke();
+  // утоптанный центр
+  c.beginPath();
+  c.ellipse(x, y + h * 0.02, h * 0.52, h * 0.20, 0, 0, Math.PI * 2);
+  c.fillStyle = 'rgba(166,140,100,0.55)';
+  c.fill();
+
+  // столб с мишенью
+  c.strokeStyle = '#5a4630';
+  c.lineWidth = Math.max(2, h * 0.020);
+  c.beginPath();
+  c.moveTo(x - h * 0.32, y);
+  c.lineTo(x - h * 0.32, y - h * 0.46);
+  c.stroke();
+  c.fillStyle = '#c9a45c';
+  c.beginPath(); c.arc(x - h * 0.32, y - h * 0.50, h * 0.10, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = 'rgba(60,40,20,0.5)';
+  c.lineWidth = 1;
+  c.stroke();
+  c.fillStyle = '#a83a2c';
+  c.beginPath(); c.arc(x - h * 0.32, y - h * 0.50, h * 0.050, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#e8d8b0';
+  c.beginPath(); c.arc(x - h * 0.32, y - h * 0.50, h * 0.018, 0, Math.PI * 2); c.fill();
+
+  // чучело
+  c.strokeStyle = '#6b4a2e';
+  c.lineWidth = Math.max(2, h * 0.018);
+  c.beginPath();
+  c.moveTo(x + h * 0.20, y);
+  c.lineTo(x + h * 0.20, y - h * 0.40);
+  c.moveTo(x + h * 0.05, y - h * 0.30);
+  c.lineTo(x + h * 0.35, y - h * 0.30);
+  c.stroke();
+  c.fillStyle = '#8a7a5a';
+  c.beginPath(); c.arc(x + h * 0.20, y - h * 0.45, h * 0.055, 0, Math.PI * 2); c.fill();
+
+  // ограда из кольев
+  c.strokeStyle = '#4e3c29';
+  c.lineWidth = Math.max(1.3, h * 0.011);
+  for (let i = 0; i < 4; i++) {
+    const px = x - h * 0.82 + i * h * 0.14;
+    c.beginPath();
+    c.moveTo(px, y + h * 0.20);
+    c.lineTo(px, y + h * 0.20 - h * 0.18);
+    c.stroke();
+  }
+}
+
+// ---------- Живой фон: отряд гуляет по улице ----------

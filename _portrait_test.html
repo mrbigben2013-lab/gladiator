@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>portrait</title>
+<style>
+  body { background:#1b1512; margin:0; padding:10px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  figure { margin:0; text-align:center; }
+  canvas { border:1px solid #4a3a28; border-radius:8px; background: radial-gradient(circle at 50% 42%, #3a2e24, #14100d); }
+  figcaption { color:#b9a687; font-size:11px; padding-top:4px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js?t=30"></script>
+<script>window.clamp = function (v,a,b){return Math.max(a,Math.min(b,v));};</script>
+<script src="renderer.js?t=30"></script>
+<script>
+const row = document.getElementById('row');
+const variants = [
+  { eyeStyle:'calm', faceStyle:'classic' },
+  { eyeStyle:'narrow', faceStyle:'classic' },
+  { eyeStyle:'wide', faceStyle:'classic' },
+  { eyeStyle:'heavy', faceStyle:'classic' },
+  { eyeStyle:'almond', faceStyle:'classic' },
+  { eyeStyle:'kind', faceStyle:'classic' },
+  { eyeStyle:'hawk', faceStyle:'classic' },
+  { eyeStyle:'stare', faceStyle:'classic' }
+];
+variants.forEach((v, i) => {
+  const fig = document.createElement('figure');
+  const cv = document.createElement('canvas');
+  cv.width = 150; cv.height = 165;
+  const cap = document.createElement('figcaption');
+  cap.textContent = v.eyeStyle;
+  fig.appendChild(cv); fig.appendChild(cap);
+  row.appendChild(fig);
+  const ctx = cv.getContext('2d');
+  const g = {
+    id:'p'+i, name:'Портрет', gender:'male', build:'normal',
+    skinColor:'#e8ab7e', hairColor:'#4a3018',
+    hairStyle:'short', beardStyle:'none', faceStyle: v.faceStyle,
+    eyeStyle: v.eyeStyle, equip:{}
+  };
+  ctx.save();
+  ctx.translate(cv.width/2, cv.height*0.55);
+  ctx.scale(2.2, 2.2);
+  drawHead(ctx, g, 0, 26.5, '#e8ab7e', '#c98d63', false, {}, { hp:100, max:100, lost:false, ratio:1 });
+  ctx.restore();
+});
+</script>
+</body>
+</html>

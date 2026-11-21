@@ -1,0 +1,456 @@
+// ==================== БОЕВЫЕ ПСЫ ====================
+// Пёс нарисован в той же мультяшной манере, что и гладиаторы: крупная
+// голова, толстые лапы с жирным контуром, короткое мощное тело и два тона
+// на объём. Ходьба — диагональные пары лап, как у настоящей собаки.
+function drawBattleDog(ctx, dog, x, y, scale = 1, facing = 1, a = {}) {
+  const now = performance.now() / 1000;
+  const seed = (dog.id || 'dog').length * 0.61;
+  const alive = 1 - (a.dead || 0);
+  const alpha = a.alpha == null ? 1 : a.alpha;
+  const colors = dog.colors || { body: '#6b4a2e', belly: '#a98a63', snout: '#4a3320' };
+
+  const breed = dog.breedId || '';
+  const heavy = dog.build === 'heavy';
+  const slim = dog.build === 'slim';
+  const bw = heavy ? 1.14 : slim ? 0.88 : 1;
+  const legW = heavy ? 12 : slim ? 9 : 10.5;
+  const floppyEars = breed === 'molossian' || breed === 'molossian2' || breed === 'pug';
+  const shortSnout = breed === 'pug' || breed === 'molossian' || breed === 'molossian2';
+  const redEyes = breed === 'blackdog';
+  const armored = breed === 'warhound';
+  const dockedTail = breed === 'molossian' || breed === 'molossian2';
+
+  const breath = (a.breath == null ? 1 : a.breath) * alive;
+  const breathY = Math.sin(now * 2.1 + seed) * 1.5 * breath;
+  const walkPhase = a.walkPhase || 0;
+  const walk = a.walk || 0;
+  const bob = -Math.abs(Math.sin(walkPhase)) * 2.4 * walk * alive;
+  const bite = Math.max(a.swing || 0, (a.hurt || 0) * 0.55);
+  const dead = a.dead || 0;
+
+  const bodyCY = -50;
+  const bodyRX = 32 * bw;
+  const bodyRY = 18 * bw;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // --- Тень ---
+  ctx.save();
+  ctx.globalAlpha = 0.3 * alpha;
+  ctx.fillStyle = '#0a0705';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 3 * scale, 40 * scale, 10 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // --- Аура активного пса ---
+  if (a.glow > 0.01) {
+    const g = ctx.createRadialGradient(x, y - 50 * scale, 4, x, y - 50 * scale, 78 * scale);
+    g.addColorStop(0, `rgba(255,214,110,${0.26 * a.glow})`);
+    g.addColorStop(1, 'rgba(255,214,110,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 46 * scale, 70 * scale, 64 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Точка опоры ---
+  ctx.translate(x, y + (breathY + bob) * scale);
+  if (dead > 0) {
+    ctx.rotate(dead * 1.45 * facing);
+    ctx.translate(0, dead * 6);
+  }
+  ctx.rotate((a.dodge || 0) * 0.12 * facing);
+  ctx.translate((a.lunge || 0) * 4, 0);
+  ctx.scale(scale * facing, scale);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // ---------- Лапы ----------
+  const drawLeg = (L) => {
+    const sw = Math.sin(walkPhase + L.phase) * 8 * walk;
+    const lift = Math.max(0, Math.cos(walkPhase + L.phase)) * 7 * walk;
+    const topX = L.x;
+    const topY = bodyCY + bodyRY * 0.42;
+    const footX = L.x + sw;
+    const footY = -2 - lift;
+    const kneeX = L.x + sw * 0.3 + (L.back ? -5 : 5);
+    const kneeY = (topY + footY) * 0.5 - 1;
+    const col = L.far ? shade(colors.body, -0.24) : colors.body;
+
+    limb(ctx, topX, topY, kneeX, kneeY, legW, col);
+    limb(ctx, kneeX, kneeY, footX, footY, legW * 0.86, col);
+
+    // Лапа
+    ctx.fillStyle = L.far ? shade(colors.snout, -0.06) : shade(colors.snout, 0.1);
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2.8;
+    roundRect(ctx, footX - 6, footY - 3.5, 15, 7.5, 3.5);
+    ctx.fill();
+    ctx.stroke();
+
+    // Когти
+    ctx.strokeStyle = shade(colors.snout, -0.45);
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 2; i++) {
+      const cx = footX + 4.5 + i * 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, footY - 2.2);
+      ctx.lineTo(cx + 1.6, footY + 1.6);
+      ctx.stroke();
+    }
+  };
+
+  // Диагональные пары: ближние в противофазе друг другу, дальние — наоборот.
+  const legs = [
+    { x: -22 * bw, phase: Math.PI, far: true, back: true },
+    { x: 20 * bw, phase: 0, far: true, back: false },
+    { x: -13 * bw, phase: 0, far: false, back: true },
+    { x: 29 * bw, phase: Math.PI, far: false, back: false }
+  ];
+
+  legs.filter(L => L.far).forEach(drawLeg);
+
+  // ---------- Хвост ----------
+  const wag = Math.sin(now * (3 + (a.victory || 0) * 9) + seed) * (7 + (a.victory || 0) * 9);
+  const tailBaseX = -bodyRX * 0.82;
+  const tailBaseY = bodyCY - bodyRY * 0.4;
+  const tailLen = dockedTail ? 0.55 : 1;
+  const tailTipX = -bodyRX * (1.35 * tailLen + 0.2);
+  const tailTipY = bodyCY - bodyRY * (1.55 * tailLen + 0.3) + wag;
+  const tailMidX = -bodyRX * 1.2;
+  const tailMidY = bodyCY - bodyRY * 0.5 + wag * 0.3;
+
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 11 * bw;
+  ctx.beginPath();
+  ctx.moveTo(tailBaseX, tailBaseY);
+  ctx.quadraticCurveTo(tailMidX, tailMidY, tailTipX, tailTipY);
+  ctx.stroke();
+  ctx.strokeStyle = colors.body;
+  ctx.lineWidth = 7 * bw;
+  ctx.beginPath();
+  ctx.moveTo(tailBaseX, tailBaseY);
+  ctx.quadraticCurveTo(tailMidX, tailMidY, tailTipX, tailTipY);
+  ctx.stroke();
+
+  // ---------- Корпус ----------
+  ctx.beginPath();
+  ctx.ellipse(0, bodyCY, bodyRX, bodyRY, -0.05, 0, Math.PI * 2);
+  ctx.fillStyle = colors.body;
+  ctx.fill();
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 4.5;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, bodyCY, bodyRX, bodyRY, -0.05, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Тёмная сторона — зад и низ
+  ctx.fillStyle = shade(colors.body, -0.24);
+  ctx.beginPath();
+  ctx.ellipse(-bodyRX * 0.4, bodyCY + bodyRY * 0.35, bodyRX * 0.78, bodyRY * 0.85, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Светлая грудь и живот
+  ctx.fillStyle = colors.belly;
+  ctx.beginPath();
+  ctx.ellipse(bodyRX * 0.12, bodyCY + bodyRY * 0.66, bodyRX * 0.62, bodyRY * 0.52, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Блик сверху
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath();
+  ctx.ellipse(-bodyRX * 0.05, bodyCY - bodyRY * 0.5, bodyRX * 0.5, bodyRY * 0.3, -0.12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Шрамы от ран
+  const hpR = Math.max(0, Math.min(1, (dog.hp == null ? 1 : dog.hp) / Math.max(1, dog.maxHp || 1)));
+  if (hpR < 0.7) {
+    ctx.strokeStyle = BLOOD;
+    ctx.lineWidth = 2.4;
+    ctx.globalAlpha = alpha * (1 - hpR);
+    for (let i = 0; i < 3; i++) {
+      const sx = -bodyRX * 0.35 + i * 11;
+      ctx.beginPath();
+      ctx.moveTo(sx, bodyCY - bodyRY * 0.45);
+      ctx.lineTo(sx + 5, bodyCY + bodyRY * 0.3);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = alpha;
+  }
+  ctx.restore();
+
+  // ---------- Бронзовый нагрудник ----------
+  if (armored) {
+    ctx.save();
+    ctx.translate(bodyRX * 0.52, bodyCY + 1);
+    ctx.rotate(-0.12);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, bodyRX * 0.36, bodyRY * 0.92, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#9a7a44';
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 3.4;
+    ctx.stroke();
+    // Блик металла
+    ctx.fillStyle = 'rgba(255,236,180,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-bodyRX * 0.1, -bodyRY * 0.35, bodyRX * 0.14, bodyRY * 0.3, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    // Заклёпки
+    ctx.fillStyle = '#e5b54f';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.8;
+    [[-bodyRX * 0.2, -bodyRY * 0.62], [bodyRX * 0.16, -bodyRY * 0.55],
+     [-bodyRX * 0.2, bodyRY * 0.62], [bodyRX * 0.16, bodyRY * 0.55]].forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  // ---------- Шея ----------
+  const headX = bodyRX * 0.86 + 4;
+  const headY = bodyCY - bodyRY * 1.15;
+  const headR = heavy ? 22 : slim ? 18 : 20;
+
+  limb(ctx, bodyRX * 0.5, bodyCY - bodyRY * 0.35, headX - 6, headY + headR * 0.5, 16 * bw, colors.body);
+
+  // ---------- Ошейник с шипами ----------
+  ctx.save();
+  ctx.translate(headX - 11, headY + headR * 0.82);
+  ctx.rotate(-0.38);
+  ctx.fillStyle = '#7a2f28';
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 3;
+  roundRect(ctx, -9, -6, 20, 12, 4);
+  ctx.fill();
+  ctx.stroke();
+  // Шипы
+  ctx.fillStyle = '#c9a45c';
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < 3; i++) {
+    const sx = -6 + i * 6;
+    ctx.beginPath();
+    ctx.moveTo(sx, -6);
+    ctx.lineTo(sx + 3, -11);
+    ctx.lineTo(sx + 6, -6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  // Бляха
+  ctx.fillStyle = '#e5b54f';
+  ctx.beginPath();
+  ctx.arc(0, 5, 3.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // ---------- Голова ----------
+  const emo = a.emotion || (dead > 0.4 ? 'dead' : (a.hurt || 0) > 0.3 ? 'hurt'
+    : (a.victory || 0) > 0.5 ? 'happy' : 'idle');
+
+  ctx.save();
+  ctx.translate(headX, headY);
+  ctx.rotate(bite * 0.1);
+
+  // Уши: торчком или висячие лопухи
+  ctx.fillStyle = shade(colors.body, -0.16);
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 3;
+  if (floppyEars) {
+    [-1, 1].forEach(sd => {
+      ctx.beginPath();
+      ctx.moveTo(sd * headR * 0.42, -headR * 0.55);
+      ctx.quadraticCurveTo(sd * (headR + 11), -headR * 0.55, sd * (headR + 7), headR * 0.5);
+      ctx.quadraticCurveTo(sd * (headR - 2), headR * 0.25, sd * headR * 0.55, -headR * 0.05);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+  } else {
+    [-1, 1].forEach(sd => {
+      ctx.beginPath();
+      ctx.moveTo(sd * headR * 0.3, -headR * 0.72);
+      ctx.lineTo(sd * headR * 0.88, -headR * 1.78);
+      ctx.lineTo(sd * headR * 1.02, -headR * 0.42);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // Внутренняя часть уха
+      ctx.fillStyle = shade(colors.belly, -0.1);
+      ctx.beginPath();
+      ctx.moveTo(sd * headR * 0.46, -headR * 0.7);
+      ctx.lineTo(sd * headR * 0.84, -headR * 1.45);
+      ctx.lineTo(sd * headR * 0.9, -headR * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = shade(colors.body, -0.16);
+    });
+  }
+
+  // Череп
+  ctx.beginPath();
+  ctx.ellipse(0, 0, headR, headR * 0.94, 0, 0, Math.PI * 2);
+  ctx.fillStyle = colors.body;
+  ctx.fill();
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, 0, headR, headR * 0.94, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = shade(colors.body, -0.2);
+  ctx.beginPath();
+  ctx.ellipse(-headR * 0.58, headR * 0.18, headR * 0.58, headR * 0.86, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath();
+  ctx.ellipse(headR * 0.1, -headR * 0.5, headR * 0.42, headR * 0.2, -0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Морда
+  const snoutLen = shortSnout ? 16 : 24;
+  const snoutH = shortSnout ? 16 : 13;
+  const snoutX = headR * 0.6;
+  const snoutY = headR * 0.08;
+
+  ctx.beginPath();
+  roundRect(ctx, snoutX, snoutY - snoutH / 2, snoutLen, snoutH, snoutH * 0.5);
+  ctx.fillStyle = colors.snout;
+  ctx.fill();
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 3.4;
+  ctx.stroke();
+
+  // Верхняя губа светлее
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.ellipse(snoutX + snoutLen * 0.5, snoutY - snoutH * 0.22, snoutLen * 0.38, snoutH * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Нижняя челюсть открывается при укусе
+  ctx.save();
+  ctx.translate(snoutX + 1, snoutY + snoutH * 0.3);
+  ctx.rotate(bite * 0.38);
+  ctx.beginPath();
+  roundRect(ctx, 0, -1, snoutLen * 0.88, 8, 4);
+  ctx.fillStyle = shade(colors.snout, 0.14);
+  ctx.fill();
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.restore();
+
+  // Пасть: тёмная щель и клыки
+  if (bite > 0.12) {
+    ctx.fillStyle = '#5a1a14';
+    ctx.beginPath();
+    ctx.ellipse(snoutX + snoutLen * 0.55, snoutY + snoutH * 0.42,
+      snoutLen * 0.3, 2.2 + bite * 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f4efe2';
+    ctx.beginPath();
+    ctx.moveTo(snoutX + snoutLen * 0.28, snoutY + snoutH * 0.34);
+    ctx.lineTo(snoutX + snoutLen * 0.36, snoutY + snoutH * 0.34 + 4 + bite * 3);
+    ctx.lineTo(snoutX + snoutLen * 0.44, snoutY + snoutH * 0.34);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(snoutX + snoutLen * 0.62, snoutY + snoutH * 0.34);
+    ctx.lineTo(snoutX + snoutLen * 0.7, snoutY + snoutH * 0.34 + 4 + bite * 3);
+    ctx.lineTo(snoutX + snoutLen * 0.78, snoutY + snoutH * 0.34);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Нос
+  ctx.fillStyle = '#16110d';
+  ctx.beginPath();
+  ctx.ellipse(snoutX + snoutLen - 1.5, snoutY - 1, 5.4, 4.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(snoutX + snoutLen - 3.4, snoutY - 2.4, 1.6, 1.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Язык при радости
+  if (emo === 'happy') {
+    ctx.fillStyle = '#c9645c';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(snoutX + snoutLen * 0.62, snoutY + snoutH * 0.55,
+      snoutLen * 0.16, 4.4 + Math.sin(now * 7 + seed) * 0.8, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Глаз
+  const eyeX = headR * 0.26;
+  const eyeY = -headR * 0.24;
+  if (emo === 'dead') {
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(eyeX - 5, eyeY - 5);
+    ctx.lineTo(eyeX + 5, eyeY + 5);
+    ctx.moveTo(eyeX + 5, eyeY - 5);
+    ctx.lineTo(eyeX - 5, eyeY + 5);
+    ctx.stroke();
+  } else {
+    const eyeH = emo === 'angry' ? 5.2 : emo === 'hurt' ? 5.6 : 6.4;
+    ctx.fillStyle = '#fffdf6';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.ellipse(eyeX, eyeY, 6.4, eyeH, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = redEyes ? '#b3261e' : '#20180f';
+    ctx.beginPath();
+    ctx.arc(eyeX + 1.6, eyeY + 0.4, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(eyeX + 0.6, eyeY - 1.2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Бровь-рык
+  if (emo === 'angry' || bite > 0.3) {
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(eyeX - 7, eyeY - 9);
+    ctx.lineTo(eyeX + 7, eyeY - 5);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // ---------- Ближние лапы поверх корпуса ----------
+  legs.filter(L => !L.far).forEach(drawLeg);
+
+  // ---------- Вспышка урона ----------
+  if ((a.hurt || 0) > 0.01) {
+    ctx.globalAlpha = alpha * (a.hurt || 0) * 0.4;
+    ctx.fillStyle = '#ff3b30';
+    ctx.beginPath();
+    ctx.ellipse(0, bodyCY, bodyRX * 1.05, bodyRY * 2.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}

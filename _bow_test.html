@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>bow hold test</title>
+<style>
+  body { background:#1b1512; margin:0; padding:10px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; }
+  .cell { text-align:center; }
+  .cap { font-size:11px; color:#c9a45c; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(weaponId, over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'stubble',
+      equip: { weapon: itemById(weaponId), offhand: null, head: null, body: { vis:'leather', color:'#6b4529' }, arms: null, legs: null },
+      limbs: null
+    }, over || {});
+  }
+  const cases = [
+    ['w_shortbow', 'walk'],
+    ['w_longbow', 'walk'],
+    ['w_recurve', 'walk'],
+    ['w_light_xbow', 'walk'],
+    ['w_heavy_xbow', 'walk'],
+    ['w_shortbow', 'idle'],
+  ];
+  cases.forEach(([id, mode]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 260; cv.height = 300;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = itemById(id).name + ' / ' + mode;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    ctx.save();
+    ctx.translate(130, 0);
+    ctx.scale(1.6, 1.6);
+    drawBattleBrother(ctx, makeGlad(id), 0, 180, 0.95, 1, {
+      emotion: 'idle', walk: mode === 'walk' ? 1 : 0, walkPhase: 1.2
+    });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>head zoom</title>
+<style>
+  body { background:#1b1512; margin:0; padding:10px; font-family:Segoe UI, sans-serif; color:#e8d8c0; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; }
+  .cell { text-align:center; }
+  .cap { font-size:12px; color:#c9a45c; }
+  #err { color:#ff8a7a; font-size:12px; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div id="err"></div>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  window.onerror = (m, s, l) => { document.getElementById('err').textContent += m + ' @' + l + '\n'; };
+  const cases = [
+    ['male idle',        { gender:'male',   hairStyle:'short', beardStyle:'none' }, 'idle'],
+    ['male angry',       { gender:'male',   hairStyle:'crew',  beardStyle:'stubble' }, 'angry'],
+    ['male full beard',  { gender:'male',   hairStyle:'bald',  beardStyle:'full' }, 'idle'],
+    ['female',           { gender:'female', hairStyle:'long',  skinColor:'#f5c9a4' }, 'idle'],
+    ['hurt',             { gender:'male',   hairStyle:'spiky' }, 'hurt'],
+    ['happy female',     { gender:'female', hairStyle:'bun',   beardStyle:'none' }, 'happy'],
+    ['taunt',            { gender:'male',   hairStyle:'slick', beardStyle:'vandyke' }, 'taunt'],
+    ['fear',             { gender:'male',   hairStyle:'wavy' }, 'fear'],
+    ['dead',             { gender:'male',   hairStyle:'topknot', beardStyle:'long' }, 'dead']
+  ];
+  const SKIN = '#e8ab7e';
+  cases.forEach(([label, over, emo]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 250; cv.height = 280;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = label;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const glad = Object.assign({
+      id: 'tg', name: 'Тест', build: 'normal',
+      skinColor: SKIN, hairColor: '#4a3018',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+    const skin = glad.skinColor || SKIN;
+    ctx.save();
+    ctx.translate(125, 118);
+    ctx.scale(3.9, 3.9);
+    drawHead(ctx, glad, 0, glad.gender === 'female' ? 25 : 26.5, skin, shade(skin, -0.2),
+      glad.gender === 'female', { emotion: emo }, null);
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

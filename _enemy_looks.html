@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>enemy looks</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; }
+  .cell { text-align:center; }
+  .cap { font-size:11px; color:#c9a45c; height:14px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script src="combat.js"></script>
+<script>
+  // Проверка: 24 случайных врага из шаблонов разных ступеней.
+  const row = document.getElementById('row');
+  const units = [];
+  const groups = ['grunts', 'bruisers', 'murmillo', 'ranged'];
+  for (let i = 0; i < 24; i++) {
+    const tpl = ENEMY_TEMPLATES[groups[i % groups.length]][i % 3];
+    units.push(Object.assign({}, tpl));
+  }
+  units.forEach((u, i) => {
+    const glad = enemyUnitToGlad(u);
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 190;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = glad.gender + ' / ' + glad.hairStyle;
+    wrap.appendChild(cap);
+    row.appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    drawBattleBrother(ctx, glad, 75, 180, 1.0, 1, { walk: 0, walkPhase: 0, breath: 1.2, emotion: 'idle' });
+  });
+  // Второй вызов того же юнита должен дать того же человека
+  const same = units.map(u => enemyUnitToGlad(u));
+  const stable = same.every((g, i) => g.hairStyle === units[i]._look.hairStyle);
+  console.log('LOOK_STABLE=' + stable);
+</script>
+</body>
+</html>

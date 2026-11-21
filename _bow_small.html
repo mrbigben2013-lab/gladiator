@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>bow small scales</title>
+<style>
+  body { background:#241c14; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+  .cap { font-size:11px; color:#c9a45c; text-align:center; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(weaponId) {
+    return {
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'stubble',
+      equip: { weapon: itemById(weaponId), offhand: null, head: null,
+               body: { vis: 'leather', color: '#6b4529' }, arms: null, legs: null },
+      limbs: null
+    };
+  }
+  const scales = [0.42, 0.55, 0.68, 0.8];
+  scales.forEach(sc => {
+    const wrap = document.createElement('div');
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(220 * sc) + 40;
+    cv.height = Math.round(260 * sc) + 20;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = 'scale ' + sc;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    ctx.save();
+    ctx.translate(cv.width / 2, 0);
+    drawBattleBrother(ctx, makeGlad('w_shortbow'), 0, cv.height - 12, sc, 1, {});
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

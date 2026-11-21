@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>weapon in hand</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:4px; }
+  .cell { text-align:center; }
+  .cap { font-size:10px; color:#c9a45c; height:13px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'full',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  const ids = ['w_rusty','w_gladius','w_spatha','w_sabre','w_falcata','w_kopis','w_imperial',
+    'w_greatsword','w_bastard','w_zweihander','w_estoc','w_claymore','w_executioner','w_flamberge','w_nodachi',
+    'w_hatchet','w_francisca','w_handaxe','w_waraxe','w_bearded','w_broadaxe',
+    'w_club','w_spiked_club','w_mace','w_war_mace','w_flanged','w_skull_mace','w_morningstar',
+    'w_spear','w_harpoon','w_trident','w_lance','w_pike','w_glaive','w_partisan','w_halberd',
+    'w_shortbow','w_longbow','w_recurve','w_hand_xbow','w_light_xbow','w_heavy_xbow',
+    'w_dual_daggers','w_dual_swords','w_dual_axes'];
+  ids.forEach(id => {
+    const item = itemById(id);
+    if (!item) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 190; cv.height = 260;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = item.name;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const g = makeGlad({ equip: { weapon: item, offhand: null, head: null, body: null, arms: null, legs: null } });
+    // Параметры как на экране подготовки к бою
+    ctx.save();
+    ctx.translate(95, 0);
+    ctx.scale(2.2, 2.2);
+    drawBattleBrother(ctx, g, 0, 110, 0.46, 1, {
+      walk: 0.08, walkPhase: 0.4, breath: 1.3, emotion: 'idle'
+    });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

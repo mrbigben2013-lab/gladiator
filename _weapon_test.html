@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>weapon test</title>
+<style>
+  body { background:#1b1512; color:#e8d8c0; font-family:Segoe UI, sans-serif; margin:0; padding:12px; }
+  canvas { background:#2a211a; border:1px solid #4a3a2a; margin:4px; }
+  .row { display:flex; flex-wrap:wrap; }
+  .cap { font-size:11px; text-align:center; color:#c9a45c; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const ids = ['w_shortbow','w_longbow','w_recurve','w_light_xbow','w_heavy_xbow','w_repeating'];
+  const row = document.getElementById('row');
+  ids.forEach(id => {
+    const item = itemById(id);
+    const wrap = document.createElement('div');
+    const cv = document.createElement('canvas');
+    cv.width = 260; cv.height = 260;
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = item ? item.name : id;
+    wrap.appendChild(cv); wrap.appendChild(cap);
+    row.appendChild(wrap);
+
+    const ctx = cv.getContext('2d');
+    ctx.translate(130, 130);
+    ctx.scale(2.0, 2.0);
+    drawWeapon(ctx, item);
+  });
+</script>
+</body>
+</html>

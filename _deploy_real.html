@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>deploy zoom real</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cell { text-align:center; }
+  .cap { font-size:11px; color:#c9a45c; height:14px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'full',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  // Рисуем в offscreen как на подготовке (0.46), затем увеличиваем
+  const ids = ['w_rusty','w_gladius','w_shortbow','w_light_xbow','w_heavy_xbow','w_spear','w_hatchet','w_greatsword'];
+  const row = document.getElementById('row');
+  ids.forEach((wid, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 240; cv.height = 240;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = itemById(wid).name;
+    wrap.appendChild(cap);
+    row.appendChild(wrap);
+
+    const off = document.createElement('canvas');
+    off.width = 120; off.height = 120;
+    const octx = off.getContext('2d');
+    octx.fillStyle = '#2a211a';
+    octx.fillRect(0, 0, 120, 120);
+    const g = makeGlad({
+      id: 'g' + i,
+      equip: { weapon: itemById(wid), offhand: null, head: null, body: null, arms: null, legs: null }
+    });
+    // Несколько кадров, чтобы carry-угол установился
+    for (let k = 0; k < 60; k++) {
+      octx.fillStyle = '#2a211a';
+      octx.fillRect(0, 0, 120, 120);
+      drawBattleBrother(octx, g, 60, 110, 0.46, 1, { walk: 0.08, walkPhase: 1.2 + i, breath: 1.3, emotion: 'idle' });
+    }
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, 240, 240);
+  });
+</script>
+</body>
+</html>

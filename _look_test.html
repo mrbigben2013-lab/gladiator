@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>look test</title>
+<style>
+  body { background:#1b1512; color:#e8d8c0; font-family:Segoe UI, sans-serif; margin:0; padding:10px; }
+  canvas { background:#2a211a; border:1px solid #4a3a2a; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .cell { text-align:center; }
+  .cap { font-size:10px; color:#c9a45c; margin-top:2px; }
+  h3 { font-size:12px; color:#e5b54f; margin:6px 0; }
+</style>
+</head>
+<body>
+<h3>Бороды</h3><div class="row" id="beards"></div>
+<h3>Причёски</h3><div class="row" id="hairs"></div>
+<h3>Шлемы</h3><div class="row" id="helms"></div>
+<h3>Броня</h3><div class="row" id="bodies"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'testglad', name: 'Тест', gender: 'male',
+      build: 'normal', skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'none', colors: null,
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  function cell(parent, label, glad, opts) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 210;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = label;
+    wrap.appendChild(cap);
+    parent.appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    drawBattleBrother(ctx, glad, 75, 195, 0.9, 1, opts || { emotion: 'idle' });
+  }
+
+  const beards = ['none','stubble','full','long','goatee','moustache'];
+  beards.forEach(b => cell(document.getElementById('beards'), b, makeGlad({ beardStyle: b })));
+
+  const hairs = ['short','long','ponytail','braids','bun','mohawk','curly','dreadlocks','topknot','shaved'];
+  hairs.forEach(h => cell(document.getElementById('hairs'), h, makeGlad({ hairStyle: h })));
+
+  const helms = ['hood','cap','nasal','kettle','murmillo','greathelm','horned','crown'];
+  helms.forEach(h => cell(document.getElementById('helms'), h, makeGlad({
+    equip: { weapon:null, offhand:null, head: { vis: h, color:'#b0bac4', trim:'#c9a45c', crest:'#b03a2c' }, body:null, arms:null, legs:null }
+  })));
+
+  const bodies = ['tunic','rags','leather','brigandine','hide','gambeson','quilted','mail','chain','scale','dragon','lamellar','splint','plate','lorica','imperial','bronze'];
+  bodies.forEach(b => cell(document.getElementById('bodies'), b, makeGlad({
+    equip: { weapon:null, offhand:null, head:null, body:{ vis:b, color:'#7a6a52' }, arms:null, legs:null }
+  })));
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>weapon shapes zoom</title>
+<style>
+  body { background:#1d1712; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .grid { display:flex; flex-wrap:wrap; gap:4px; }
+  .cell { width:150px; text-align:center; }
+  .cell canvas { background:#2a211a; border:1px solid #4a3a26; border-radius:6px; display:block; }
+  .cap { font-size:10px; color:#c9a45c; margin-top:2px; height:14px; }
+</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const ids = ['w_rusty','w_gladius','w_spatha','w_sabre','w_falcata','w_kopis','w_imperial',
+    'w_greatsword','w_bastard','w_zweihander','w_estoc','w_claymore','w_executioner','w_flamberge','w_nodachi',
+    'w_shiv','w_dirk','w_pugio','w_stiletto','w_sai','w_kris','w_katar','w_nightfang',
+    'w_hatchet','w_francisca','w_handaxe','w_waraxe','w_bearded','w_broadaxe','w_skullsplitter','w_bloodmoon',
+    'w_greatbeard','w_greataxe','w_bardiche','w_labrys','w_daneaxe','w_executioner_axe','w_titanaxe',
+    'w_club','w_spiked_club','w_mace','w_war_mace','w_flanged','w_skull_mace','w_morningstar','w_sun_mace',
+    'w_blacksmith','w_warhammer','w_horseman_pick','w_warpick','w_sledge','w_judge','w_thunder',
+    'w_spear','w_harpoon','w_trident','w_lance','w_pike','w_glaive','w_partisan','w_halberd','w_imperial_lance','w_trident_champion',
+    'w_shortbow','w_longbow','w_recurve','w_phoenix',
+    'w_hand_xbow','w_light_xbow','w_heavy_xbow','w_repeating','w_scorpion_xbow'];
+  const grid = document.getElementById('grid');
+  ids.forEach(id => {
+    const item = itemById(id);
+    if (!item) return;
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 150; cv.height = 150;
+    cell.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = item.name;
+    cell.appendChild(cap);
+    grid.appendChild(cell);
+    const ctx = cv.getContext('2d');
+    drawItemIcon(ctx, item, 75, 75, 140);
+  });
+</script>
+</body>
+</html>

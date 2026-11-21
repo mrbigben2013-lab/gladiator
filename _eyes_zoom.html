@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Глаза крупно</title>
+<style>
+  body { margin:0; background:#14100d; color:#e8dcc8; font:12px "Segoe UI", sans-serif; padding:12px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  figure { margin:0; }
+  canvas { background: radial-gradient(circle at 50% 42%, #3a2e24, #14100d); border:1px solid #4a3a28; border-radius:8px; }
+  figcaption { text-align:center; padding:4px; color:#b9a687; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js?t=11"></script>
+<script>window.clamp = function (v,a,b){return Math.max(a,Math.min(b,v));};</script>
+<script src="renderer.js?t=11"></script>
+<script>
+const row = document.getElementById('row');
+const base = {
+  id:'eye_test', name:'Тест', gender:'male', build:'normal',
+  skinColor:'#e8ab7e', hairColor:'#4a3018',
+  hairStyle:'short', beardStyle:'none', faceStyle:'classic', equip:{}
+};
+EYE_SETS.forEach(s => {
+  const fig = document.createElement('figure');
+  const cv = document.createElement('canvas');
+  cv.width = 260; cv.height = 150;
+  const cap = document.createElement('figcaption');
+  cap.textContent = s.name;
+  fig.appendChild(cv); fig.appendChild(cap);
+  row.appendChild(fig);
+  const ctx = cv.getContext('2d');
+  const g = Object.assign({}, base, { eyeStyle: s.id });
+  ctx.save();
+  // Крупный план зоны глаз: глаза лежат около y = -2.4 в системе головы.
+  ctx.translate(cv.width / 2, cv.height / 2 + 12);
+  ctx.scale(5.2, 5.2);
+  drawHead(ctx, g, 0, 26.5, '#e8ab7e', '#c98d63', false, {}, { hp:100, max:100, lost:false, ratio:1 });
+  ctx.restore();
+});
+</script>
+</body>
+</html>

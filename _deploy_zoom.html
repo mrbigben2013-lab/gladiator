@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>deploy zoom</title>
+<style>
+  body { background:#1b1512; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cell { text-align:center; }
+  .cap { font-size:11px; color:#c9a45c; height:14px; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(over) {
+    return Object.assign({
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'full',
+      equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null },
+      limbs: null
+    }, over);
+  }
+  const ids = ['w_rusty','w_gladius','w_hatchet','w_warhammer','w_light_xbow','w_heavy_xbow','w_shortbow','w_spear'];
+  ids.forEach(id => {
+    const item = itemById(id);
+    const wrap = document.createElement('div');
+    wrap.className = 'cell';
+    const cv = document.createElement('canvas');
+    cv.width = 300; cv.height = 420;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = item.name;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    const g = makeGlad({ equip: { weapon: item, offhand: null, head: null, body: null, arms: null, legs: null } });
+    // Прогреваем 90 кадров, чтобы carry-угол установился как на подготовке
+    for (let i = 0; i < 90; i++) {
+      drawBattleBrother(ctx, g, 150, 200, 0.46, 1, { walk: 0.08, walkPhase: i * 0.05, breath: 1.3, emotion: 'idle' });
+    }
+    ctx.save();
+    ctx.translate(150, 0);
+    ctx.scale(4, 4);
+    drawBattleBrother(ctx, g, 0, 95, 0.46, 1, { walk: 0.08, walkPhase: 4.5, breath: 1.3, emotion: 'idle' });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>

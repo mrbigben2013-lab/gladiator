@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Рука и оружие</title>
+<style>
+  body { margin: 0; background: #14100d; color: #e8dcc8; font: 12px "Segoe UI", sans-serif; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+  figure { margin: 0; }
+  canvas { background: radial-gradient(circle at 50% 42%, #3a2e24, #14100d); border: 1px solid #4a3a28; border-radius: 8px; }
+  figcaption { text-align: center; padding: 4px; color: #b9a687; }
+</style>
+</head>
+<body>
+<figure><canvas id="c1" width="340" height="470"></canvas><figcaption>гладиус, зум 3.4</figcaption></figure>
+<figure><canvas id="c2" width="340" height="470"></canvas><figcaption>топор</figcaption></figure>
+<figure><canvas id="c3" width="340" height="470"></canvas><figcaption>без оружия</figcaption></figure>
+<figure><canvas id="c4" width="340" height="470"></canvas><figcaption>щит + меч</figcaption></figure>
+
+<script src="data.js"></script>
+<script>window.clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };</script>
+<script src="renderer.js"></script>
+<script>
+function hero(wpnId, offId) {
+  const g = {
+    id: 'arm_test_1', name: 'T', gender: 'male', build: 'normal',
+    skinColor: '#e8ab7e', hairColor: '#4a3018', hairStyle: 'short',
+    beardStyle: 'none', faceStyle: 'classic',
+    eyeStyle: 'calm', noseStyle: 'straight', browStyle: 'natural',
+    equip: { weapon: null, offhand: null, head: null, body: null, arms: null, legs: null }
+  };
+  if (wpnId) { const w = itemById(wpnId); if (w) g.equip.weapon = w; }
+  if (offId) { const o = itemById(offId); if (o) g.equip.offhand = o; }
+  return g;
+}
+
+function paint(id, g) {
+  const cv = document.getElementById(id);
+  const ctx = cv.getContext('2d');
+  drawBattleBrother(ctx, g, cv.width / 2, cv.height - 30, 3.4, 1, {});
+}
+
+paint('c1', hero('w_rusty'));
+paint('c2', hero('w_hatchet'));
+paint('c3', hero(null));
+paint('c4', hero('w_rusty', 'o_buckler'));
+</script>
+</body>
+</html>

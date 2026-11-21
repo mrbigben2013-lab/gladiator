@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>bow combat scale</title>
+<style>
+  body { background:#3a2f22; margin:0; padding:8px; font-family:Segoe UI, sans-serif; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .cap { font-size:11px; color:#c9a45c; text-align:center; }
+</style>
+</head>
+<body>
+<div class="row" id="row"></div>
+<script src="data.js"></script>
+<script src="renderer.js"></script>
+<script>
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  function makeGlad(weaponId) {
+    return {
+      id: 'tg', name: 'Тест', gender: 'male', build: 'normal',
+      skinColor: '#e8ab7e', hairColor: '#4a3018',
+      hairStyle: 'short', beardStyle: 'stubble',
+      equip: { weapon: itemById(weaponId), offhand: null, head: null,
+               body: { vis: 'leather', color: '#6b4529' }, arms: null, legs: null },
+      limbs: null
+    };
+  }
+  // Боевой масштаб и три фазы: покой, натяжение, выстрел
+  const cases = [
+    ['w_shortbow', 0, 'покой'],
+    ['w_shortbow', 0.5, 'натяжение'],
+    ['w_shortbow', 1, 'выстрел'],
+    ['w_longbow', 0.5, 'натяжение'],
+    ['w_recurve', 0.5, 'натяжение'],
+  ];
+  cases.forEach(([id, swing, label]) => {
+    const wrap = document.createElement('div');
+    const cv = document.createElement('canvas');
+    cv.width = 210; cv.height = 250;
+    wrap.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = itemById(id).name + ' / ' + label;
+    wrap.appendChild(cap);
+    document.getElementById('row').appendChild(wrap);
+    const ctx = cv.getContext('2d');
+    ctx.save();
+    ctx.translate(105, 0);
+    drawBattleBrother(ctx, makeGlad(id), 0, 210, 0.78, 1, { swing });
+    ctx.restore();
+  });
+</script>
+</body>
+</html>
